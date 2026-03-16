@@ -1,0 +1,276 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ============================================
+// USUÁRIO E PERFIL
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  profile      UserProfile?
+  progress     UserProgress?
+  achievements UserAchievement[]
+  waterIntakes WaterIntake[]
+  weightHistory WeightHistory[]
+  favorites    Favorite[]
+  dailyChecks  DailyCheck[]
+}
+
+model UserProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  weight       Float    // Peso atual em kg
+  height       Float    // Altura em cm
+  goalWeight   Float    // Meta de peso
+  birthDate    DateTime?
+  objective    String?  // "lose", "maintain", "gain"
+  activityLevel String? // "sedentary", "light", "moderate", "active"
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model UserProgress {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  currentPhase Int      @default(1)    // 1-5
+  streak       Int      @default(0)    // Dias consecutivos
+  totalDays    Int      @default(0)    // Total de dias no app
+  lastCheckIn  DateTime?
+  
+  // Progresso por fase (0-100)
+  phase1Progress Int    @default(0)
+  phase2Progress Int    @default(0)
+  phase3Progress Int    @default(0)
+  phase4Progress Int    @default(0)
+  phase5Progress Int    @default(0)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================
+// FASES E CONTEÚDO
+// ============================================
+
+model Phase {
+  id          String   @id @default(cuid())
+  number      Int      @unique    // 1-5
+  title       String
+  emoji       String
+  description String
+  color       String   // Cor tema da fase
+  
+  contents    PhaseContent[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PhaseContent {
+  id          String   @id @default(cuid())
+  phaseId     String
+  phase       Phase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  
+  order       Int                 // Ordem do conteúdo
+  title       String
+  content     String              // Texto/HTML do conteúdo
+  type        String              // "text", "exercise", "tip", "quote"
+  isExercise  Boolean  @default(false)
+  exerciseQuestion String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([phaseId, order])
+}
+
+// ============================================
+// RECEITAS E SUCOS
+// ============================================
+
+model Recipe {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  category     String   // "cafe_salgado", "cafe_doce", "principal", "lanche_doce", "lanche_salgado", "vegetariana", "proteina", "sopa"
+  calories     Int
+  prepTime     Int?     // Tempo em minutos
+  servings     Int      @default(1)
+  ingredients  String   // JSON array
+  instructions String   // JSON array
+  imageUrl     String?
+  tips         String?
+  
+  favorites    Favorite[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Juice {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  benefits     String   // JSON array
+  ingredients  String   // JSON array
+  instructions String   // JSON array
+  imageUrl     String?
+  prepTime     Int?
+  
+  favorites    Favorite[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  recipeId  String?
+  recipe    Recipe?  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  juiceId   String?
+  juice     Juice?   @relation(fields: [juiceId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, recipeId])
+  @@unique([userId, juiceId])
+}
+
+// ============================================
+// PLANO ALIMENTAR
+// ============================================
+
+model MealPlan {
+  id           String   @id @default(cuid())
+  dayOfWeek    Int      // 1-7 (Seg-Dom)
+  mealType     String   // "cafe_manha", "almoco", "lanche_tarde", "jantar", "ceia"
+  description  String
+  options      String?  // JSON array com opções/substituições
+  calories     Int?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([dayOfWeek, mealType])
+}
+
+// ============================================
+// CHECK DIÁRIO E GAMIFICAÇÃO
+// ============================================
+
+model DailyCheck {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime
+  
+  drankWater   Boolean  @default(false)
+  followedMeal Boolean  @default(false)
+  readContent  Boolean  @default(false)
+  exercised    Boolean  @default(false)
+  mindfulness  Boolean  @default(false)
+  
+  xpEarned     Int      @default(0)
+  
+  createdAt    DateTime @default(now())
+  
+  @@unique([userId, date])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  emoji       String
+  xpReward    Int
+  category    String   // "streak", "phase", "special", "water", "meals"
+  requirement String   // JSON com requisitos
+  
+  userAchievements UserAchievement[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model UserAchievement {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement  Achievement @relation(fields: [achievementId], references: [id])
+  
+  unlockedAt   DateTime @default(now())
+  
+  @@unique([userId, achievementId])
+}
+
+// ============================================
+// CONTROLE DE ÁGUA E PESO
+// ============================================
+
+model WaterIntake {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  
+  glasses   Int      @default(0)  // Copos de 250ml
+  goal      Int      // Meta diária calculada
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, date])
+}
+
+model WeightHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  
+  weight    Float
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, date])
+}
+
+// ============================================
+// FRASES MOTIVACIONAIS
+// ============================================
+
+model MotivationalQuote {
+  id        String   @id @default(cuid())
+  quote     String
+  author    String?
+  category  String?  // "mentalidade", "agua", "alimentacao", "exercicio", "geral"
+  
+  createdAt DateTime @default(now())
+}
