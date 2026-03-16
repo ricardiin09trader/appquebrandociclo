@@ -2567,13 +2567,6 @@ function ProfileScreen() {
         </Card>
         
         <Button onClick={() => logout()} variant="outline" className="w-full border-red-200 text-red-500 hover:bg-red-50">Sair da Conta</Button>
-
-        {/* Admin Button */}
-        <div className="mt-4">
-          <Button onClick={() => setCurrentView('admin')} variant="outline" className="w-full border-purple-200 text-purple-600 hover:bg-purple-50">
-            <Shield className="mr-2 h-5 w-5" /> Admin
-          </Button>
-        </div>
       </div>
 
       <BottomNav />
@@ -3175,10 +3168,163 @@ function AdminDashboard() {
 }
 
 // ============================================
+// ADMIN LANDING PAGE
+// ============================================
+function AdminLandingPage() {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  // Use lazy initialization to check localStorage
+  const [loggedIn, setLoggedIn] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('adminLoggedIn') === 'true';
+    }
+    return false;
+  });
+
+  const handleLogin = async () => {
+    if (!password) {
+      setError('Digite a senha de admin');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Senha incorreta');
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem('adminLoggedIn', 'true');
+      setLoggedIn(true);
+    } catch (err) {
+      setError('Erro de conexão');
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminLoggedIn');
+    setLoggedIn(false);
+  };
+
+  if (loggedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">👑 Admin Dashboard</h1>
+            <p className="text-purple-200 text-sm">Gerenciamento</p>
+          </div>
+          <Button onClick={handleLogout} variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 text-sm">
+            Sair
+          </Button>
+        </div>
+        <AdminDashboard />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-xl">
+            <Shield className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Painel Admin</h1>
+          <p className="text-slate-400 text-sm mt-1">Acesso restrito</p>
+        </div>
+
+        <Card className="shadow-2xl border-slate-700 bg-slate-800/50 backdrop-blur">
+          <CardContent className="p-6">
+            {error && (
+              <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+                <XCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="admin-password" className="text-slate-300">Senha de Admin</Label>
+                <div className="relative mt-1">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <Input
+                    id="admin-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Digite a senha"
+                    className="pl-10 h-12 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={handleLogin}
+                disabled={loading}
+                className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+              >
+                {loading ? 'Entrando...' : 'Acessar Painel'}
+              </Button>
+
+              <a
+                href="/"
+                className="block w-full text-center text-sm text-slate-400 hover:text-white mt-4"
+              >
+                ← Voltar ao App
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
+
+// ============================================
 // MAIN APP
 // ============================================
 export default function QuebrandoCicloApp() {
   const { currentView, isLoggedIn } = useAppStore();
+  // Use lazy initialization to check localStorage
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('adminLoggedIn') === 'true';
+    }
+    return false;
+  });
+
+  // Listen for storage changes (logout from another tab)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsAdminMode(localStorage.getItem('adminLoggedIn') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // If admin mode is active, show admin landing page
+  if (isAdminMode) {
+    return <AdminLandingPage />;
+  }
 
   if (!isLoggedIn) return <LandingPage />;
 

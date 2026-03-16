@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, ChevronRight, ChevronLeft, Target, Mail, Lock, 
-  Eye, EyeOff, Loader2, AlertCircle
+  Eye, EyeOff, Loader2, AlertCircle, Shield, Zap
 } from 'lucide-react';
+import { AdminLoginScreen } from '@/components/AdminLoginScreen';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,12 +18,12 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onComplete }: LoginScreenProps) {
   const [mode, setMode] = useState<'welcome' | 'login' | 'register'>('welcome');
-  const [step, setStep] = useState(1); // Para o registro: 1=dados, 2=peso, 3=meta
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   
-  // Dados do formulário
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +64,6 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
 
   const handleRegister = async () => {
     if (step < 3) {
-      // Validações por etapa
       if (step === 1) {
         if (!name || !email || !password) {
           setError('Preencha todos os campos');
@@ -87,7 +87,6 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
       return;
     }
 
-    // Registro final
     if (!goalWeight) {
       setError('Informe sua meta de peso');
       return;
@@ -124,6 +123,21 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
       setLoading(false);
     }
   };
+
+  // Se deve mostrar a tela de admin
+  if (showAdmin) {
+    return (
+      <AdminLoginScreen 
+        onBack={() => setShowAdmin(false)} 
+        onSuccess={() => {
+          // Salva no localStorage que está logado como admin
+          localStorage.setItem('adminLoggedIn', 'true');
+          // Recarrega a página para mostrar o dashboard admin
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-50 flex flex-col">
@@ -191,7 +205,18 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
                     </Button>
                   </div>
 
-                  <p className="text-xs text-gray-400 text-center mt-6">
+                  {/* Botão Admin */}
+                  <div className="mt-6 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => setShowAdmin(true)}
+                      className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-amber-600 transition-colors"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Acesso Admin
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-gray-400 text-center mt-4">
                     Ao continuar, você aceita nossos termos de uso
                   </p>
                 </CardContent>
@@ -521,6 +546,3 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
     </div>
   );
 }
-
-// Import Zap that's used
-import { Zap } from 'lucide-react';
