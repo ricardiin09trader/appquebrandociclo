@@ -38,7 +38,7 @@ interface AppState {
   user: User | null;
   userId: string | null;
   isLoggedIn: boolean;
-  currentView: 'welcome' | 'onboarding' | 'login' | 'register' | 'dashboard' | 'phases' | 'phase-content' | 'recipes' | 'recipe-detail' | 'juices' | 'juice-detail' | 'mealplan' | 'water' | 'profile' | 'achievements' | 'workout';
+  currentView: 'welcome' | 'onboarding' | 'login' | 'register' | 'dashboard' | 'phases' | 'phase-content' | 'recipes' | 'recipe-detail' | 'juices' | 'juice-detail' | 'mealplan' | 'water' | 'profile' | 'achievements' | 'workout' | 'admin';
   selectedPhase: number;
   selectedRecipe: string | null;
   selectedJuice: string | null;
