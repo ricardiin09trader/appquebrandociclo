@@ -826,7 +826,22 @@ function LandingPage() {
                 <User className="mr-2 h-5 w-5" /> Criar Conta
               </Button>
             </div>
-            <p className="text-xs text-gray-400 text-center mt-4">
+            
+            {/* Admin Access Link */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  localStorage.setItem('adminLoggedIn', 'true');
+                  window.location.reload();
+                }}
+                className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-amber-600 transition-colors"
+              >
+                <Shield className="h-4 w-4" />
+                Acesso Admin
+              </button>
+            </div>
+            
+            <p className="text-xs text-gray-400 text-center mt-3">
               Ao continuar, você aceita nossos termos de uso
             </p>
           </motion.div>
