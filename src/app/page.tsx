@@ -7,7 +7,7 @@ import {
   Heart, Plus, Minus, Check, Droplets, Target, Download, X, 
   Share2, Award, Clock, Brain, Utensils, GlassWater, Dumbbell,
   Star, Zap, Lock, Unlock, Play, Pause, RotateCcw, Edit3, Search, Flame,
-  Sun, Moon, Smartphone, Info, XCircle, Share, ChevronDown, Mail, Eye, EyeOff
+  Sun, Moon, Smartphone, Info, XCircle, Share, ChevronDown, Mail, Eye, EyeOff, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -986,7 +986,7 @@ function LandingPage() {
 // DASHBOARD PRINCIPAL
 // ============================================
 function Dashboard() {
-  const { user, setCurrentView, setSelectedPhase } = useAppStore();
+  const { user, userId, setCurrentView, setSelectedPhase, updateUserProgress } = useAppStore();
   const { theme, toggleTheme } = useThemeStore();
   const [todayCheck, setTodayCheck] = useState({
     drankWater: false, followedMeal: false, readContent: false, exercised: false, mindfulness: false,
@@ -1001,6 +1001,12 @@ function Dashboard() {
     phase4Lessons: [],
     exerciseAnswers: {},
   });
+  const [apiProgress, setApiProgress] = useState<{
+    xp: number;
+    level: number;
+    streak: number;
+    totalDays: number;
+  } | null>(null);
 
   const randomQuoteIndex = Math.floor(Math.random() * motivationalPhrases.length);
 
@@ -1026,26 +1032,50 @@ function Dashboard() {
 
   const fetchTodayCheck = useCallback(async () => {
     try {
-      const res = await fetch('/api/user/checkin', { headers: { 'x-user-id': useAppStore.getState().userId || '' } });
+      const res = await fetch('/api/user/checkin', { headers: { 'x-user-id': userId || '' } });
       setTodayCheck(await res.json());
     } catch (error) { console.error('Erro:', error); }
-  }, []);
+  }, [userId]);
 
   const fetchWater = useCallback(async () => {
     try {
-      const res = await fetch('/api/water', { headers: { 'x-user-id': useAppStore.getState().userId || '' } });
+      const res = await fetch('/api/water', { headers: { 'x-user-id': userId || '' } });
       const data = await res.json();
       setWater({ glasses: data.glasses, goal: data.goal });
     } catch (error) { console.error('Erro:', error); }
-  }, []);
+  }, [userId]);
+
+  const fetchProgress = useCallback(async () => {
+    try {
+      const res = await fetch('/api/user/progress', { headers: { 'x-user-id': userId || '' } });
+      if (res.ok) {
+        const data = await res.json();
+        setApiProgress({
+          xp: data.xp || 0,
+          level: data.level || 1,
+          streak: data.streak || 0,
+          totalDays: data.totalDays || 0,
+        });
+        updateUserProgress({
+          xp: data.xp || 0,
+          level: data.level || 1,
+          streak: data.streak || 0,
+          totalDays: data.totalDays || 0,
+        });
+      }
+    } catch (error) { console.error('Erro ao buscar progresso:', error); }
+  }, [userId, updateUserProgress]);
 
   useEffect(() => {
-    fetchTodayCheck();
-    fetchWater();
+    if (userId) {
+      fetchTodayCheck();
+      fetchWater();
+      fetchProgress();
+    }
     // Load user progress from localStorage
     const saved = localStorage.getItem('quebrando-ciclo-progress');
     if (saved) setUserProgress(JSON.parse(saved));
-  }, [fetchTodayCheck, fetchWater]);
+  }, [fetchTodayCheck, fetchWater, fetchProgress, userId]);
 
   const handleCheck = async (key: keyof typeof todayCheck) => {
     const newValue = !todayCheck[key];
@@ -1053,9 +1083,11 @@ function Dashboard() {
     try {
       await fetch('/api/user/checkin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': useAppStore.getState().userId || '' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
         body: JSON.stringify({ ...todayCheck, [key]: newValue }),
       });
+      // Refresh progress after check-in
+      fetchProgress();
     } catch (error) { console.error('Erro:', error); }
   };
 
@@ -1065,11 +1097,16 @@ function Dashboard() {
     try {
       await fetch('/api/water', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': useAppStore.getState().userId || '' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
         body: JSON.stringify({ glasses: newGlasses }),
       });
     } catch (error) { console.error('Erro:', error); }
   };
+
+  // Use API progress if available, otherwise fall back to user store
+  const displayXp = apiProgress?.xp ?? user?.progress?.xp ?? 0;
+  const displayLevel = apiProgress?.level ?? user?.progress?.level ?? 1;
+  const displayStreak = apiProgress?.streak ?? user?.progress?.streak ?? 0;
 
   const quote = motivationalPhrases[randomQuoteIndex];
   const checks = [
@@ -1151,16 +1188,16 @@ function Dashboard() {
         <div className="bg-white/10 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm">Nível {user?.progress?.level || 1}</span>
+              <span className="text-sm">Nível {displayLevel}</span>
               <span className="text-xs bg-yellow-400/20 text-yellow-200 px-2 py-0.5 rounded-full">
-                {user?.progress?.xp || 0} XP
+                {displayXp} XP
               </span>
             </div>
             <span className="text-xs">{progressPercent}% completo</span>
           </div>
-          <Progress value={((user?.progress?.xp || 0) % 100)} className="h-2 bg-white/20" />
+          <Progress value={(displayXp % 100)} className="h-2 bg-white/20" />
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-green-100">🔥 {user?.progress?.streak || 0} dias seguidos</span>
+            <span className="text-xs text-green-100">🔥 {displayStreak} dias seguidos</span>
             <span className="text-xs text-green-100">{completedLessons}/{totalLessons} lições</span>
           </div>
         </div>
@@ -2530,7 +2567,15 @@ function ProfileScreen() {
         </Card>
         
         <Button onClick={() => logout()} variant="outline" className="w-full border-red-200 text-red-500 hover:bg-red-50">Sair da Conta</Button>
+
+        {/* Admin Button */}
+        <div className="mt-4">
+          <Button onClick={() => setCurrentView('admin')} variant="outline" className="w-full border-purple-200 text-purple-600 hover:bg-purple-50">
+            <Shield className="mr-2 h-5 w-5" /> Admin
+          </Button>
+        </div>
       </div>
+
       <BottomNav />
     </motion.div>
   );
@@ -2872,6 +2917,264 @@ function JuiceDetailScreen() {
 }
 
 // ============================================
+// ADMIN DASHBOARD
+// ============================================
+function AdminDashboard() {
+  const { setCurrentView } = useAppStore();
+  const [adminKey, setAdminKey] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'users' | 'stats'>('users');
+
+  const ADMIN_SECRET = 'quebrando-ciclo-admin-2024';
+
+  const handleLogin = () => {
+    if (adminKey === ADMIN_SECRET) {
+      setIsAuthenticated(true);
+      fetchData();
+    } else {
+      alert('Chave incorreta!');
+    }
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [usersRes, statsRes] = await Promise.all([
+        fetch(`/api/admin/users?adminKey=${ADMIN_SECRET}&action=list`),
+        fetch(`/api/admin/users?adminKey=${ADMIN_SECRET}&action=stats`),
+      ]);
+      const usersData = await usersRes.json();
+      const statsData = await statsRes.json();
+      setUsers(usersData.users || []);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Erro:', error);
+    }
+    setLoading(false);
+  };
+
+  const handleCleanup = async () => {
+    if (!confirm('Tem certeza que deseja excluir usuários inativos há mais de 4 dias?')) return;
+    try {
+      const res = await fetch(`/api/admin/users?adminKey=${ADMIN_SECRET}&action=cleanup`);
+      const data = await res.json();
+      alert(data.message);
+      fetchData();
+    } catch (error) {
+      console.error('Erro:', error);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+    try {
+      await fetch(`/api/admin/users?adminKey=${ADMIN_SECRET}&userId=${userId}`, { method: 'DELETE' });
+      fetchData();
+    } catch (error) {
+      console.error('Erro:', error);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardContent className="p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="h-8 w-8 text-purple-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+              <p className="text-gray-500 text-sm mt-1">Digite a chave de acesso</p>
+            </div>
+            <Input
+              type="password"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              placeholder="Chave de acesso"
+              className="h-12"
+            />
+            <Button onClick={handleLogin} className="w-full mt-4 h-12 bg-purple-600 hover:bg-purple-700">
+              Entrar
+            </Button>
+            <Button onClick={() => setCurrentView('dashboard')} variant="outline" className="w-full mt-2">
+              Voltar ao App
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-5 rounded-b-3xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">👑 Admin Dashboard</h1>
+            <p className="text-purple-200 text-sm">Gerenciamento de usuários</p>
+          </div>
+          <Button onClick={() => setCurrentView('dashboard')} variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30">
+            <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="p-4 flex gap-2">
+        <Button 
+          onClick={() => setActiveTab('users')} 
+          className={`flex-1 ${activeTab === 'users' ? 'bg-purple-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Usuários ({users.length})
+        </Button>
+        <Button 
+          onClick={() => setActiveTab('stats')} 
+          className={`flex-1 ${activeTab === 'stats' ? 'bg-purple-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Estatísticas
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto" />
+        </div>
+      ) : activeTab === 'users' ? (
+        <div className="px-4 space-y-3">
+          {/* Cleanup Button */}
+          <Button onClick={handleCleanup} variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50">
+            🗑️ Limpar usuários inativos (+4 dias)
+          </Button>
+
+          {/* User List */}
+          {users.map((user) => (
+            <Card key={user.id} className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-800">{user.name}</h3>
+                      {user.daysSinceActivity >= 4 && (
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                          Inativo {user.daysSinceActivity}d
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                      <span>📅 {new Date(user.createdAt).toLocaleDateString('pt-BR')}</span>
+                      <span>🔥 {user.progress?.streak || 0} dias</span>
+                      <span>⭐ Nível {user.progress?.level || 1}</span>
+                      <span>💫 {user.progress?.xp || 0} XP</span>
+                    </div>
+                    {user.profile && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        {user.profile.weight}kg → {user.profile.goalWeight}kg ({user.profile.weightToLose?.toFixed(1)}kg para perder)
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={() => handleDeleteUser(user.id)} 
+                    variant="ghost" 
+                    className="text-red-500 hover:bg-red-50"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {users.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Nenhum usuário cadastrado</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="px-4 space-y-3">
+          {stats && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-purple-600">{stats.totalUsers}</p>
+                    <p className="text-sm text-gray-600">Total Usuários</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-green-600">{stats.activeToday}</p>
+                    <p className="text-sm text-gray-600">Ativos Hoje</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-blue-600">{stats.activeThisWeek}</p>
+                    <p className="text-sm text-gray-600">Ativos Semana</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-red-50 border-red-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-red-600">{stats.inactiveUsers}</p>
+                    <p className="text-sm text-gray-600">Inativos (+4d)</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="shadow-sm">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3">📊 Resumo</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Total Check-ins</span>
+                      <span className="font-medium">{stats.totalCheckIns}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">XP Total Acumulado</span>
+                      <span className="font-medium">{stats.totalXP}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Média Streak</span>
+                      <span className="font-medium">{stats.avgStreak} dias</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3">📅 Novos Usuários (7 dias)</h3>
+                  <div className="space-y-2">
+                    {stats.last7Days?.map((day: any) => (
+                      <div key={day.date} className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 w-20">{day.date}</span>
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-purple-600 h-2 rounded-full" 
+                            style={{ width: `${Math.min((day.newUsers / Math.max(...(stats.last7Days?.map((d: any) => d.newUsers) || [1]))) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium w-8">{day.newUsers}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // MAIN APP
 // ============================================
 export default function QuebrandoCicloApp() {
@@ -2891,6 +3194,7 @@ export default function QuebrandoCicloApp() {
     case 'workout': return <WorkoutScreen />;
     case 'achievements': return <AchievementsScreen />;
     case 'profile': return <ProfileScreen />;
+    case 'admin': return <AdminDashboard />;
     default: return <Dashboard />;
   }
 }
