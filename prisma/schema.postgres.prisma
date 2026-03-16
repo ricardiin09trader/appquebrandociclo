@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ============================================
+// USUÁRIO E PERFIL
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  isAdmin      Boolean  @default(false)
+  lastActivity DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  profile      UserProfile?
+  progress     UserProgress?
+  achievements UserAchievement[]
+  waterIntakes WaterIntake[]
+  weightHistory WeightHistory[]
+  dailyChecks  DailyCheck[]
+}
+
+model UserProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  weight       Float    @default(0)
+  height       Float    @default(0)
+  goalWeight   Float    @default(0)
+  objective    String   @default("lose")
+  activityLevel String  @default("sedentary")
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model UserProgress {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  currentPhase Int      @default(1)
+  streak       Int      @default(0)
+  totalDays    Int      @default(0)
+  lastCheckIn  DateTime?
+  
+  phase1Progress Int    @default(0)
+  phase2Progress Int    @default(0)
+  phase3Progress Int    @default(0)
+  phase4Progress Int    @default(0)
+  phase5Progress Int    @default(0)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================
+// CHECK DIÁRIO E GAMIFICAÇÃO
+// ============================================
+
+model DailyCheck {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime
+  
+  drankWater   Boolean  @default(false)
+  followedMeal Boolean  @default(false)
+  readContent  Boolean  @default(false)
+  exercised    Boolean  @default(false)
+  mindfulness  Boolean  @default(false)
+  
+  xpEarned     Int      @default(0)
+  
+  createdAt    DateTime @default(now())
+  
+  @@unique([userId, date])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  emoji       String
+  xpReward    Int
+  category    String
+  requirement String
+  
+  userAchievements UserAchievement[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model UserAchievement {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement  Achievement @relation(fields: [achievementId], references: [id])
+  
+  unlockedAt   DateTime @default(now())
+  
+  @@unique([userId, achievementId])
+}
+
+// ============================================
+// CONTROLE DE ÁGUA E PESO
+// ============================================
+
+model WaterIntake {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  
+  glasses   Int      @default(0)
+  goal      Int      @default(8)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, date])
+}
+
+model WeightHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  
+  weight    Float
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, date])
+}
