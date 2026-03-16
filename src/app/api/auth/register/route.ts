@@ -35,19 +35,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (weight || height || goalWeight) {
-      await db.userProfile.create({
-        data: {
-          userId: user.id,
-          weight: weight ? parseFloat(weight) : 0,
-          height: height ? parseFloat(height) : 0,
-          goalWeight: goalWeight ? parseFloat(goalWeight) : 0,
-          objective: objective || 'lose',
-          activityLevel: activityLevel || 'sedentary',
-        },
-      });
-    }
+    // Criar perfil
+    await db.userProfile.create({
+      data: {
+        userId: user.id,
+        weight: weight ? parseFloat(weight) : 0,
+        height: height ? parseFloat(height) : 0,
+        goalWeight: goalWeight ? parseFloat(goalWeight) : 0,
+        objective: objective || 'lose',
+        activityLevel: activityLevel || 'sedentary',
+      },
+    });
 
+    // Criar progresso
     await db.userProgress.create({
       data: {
         userId: user.id,
@@ -58,20 +58,6 @@ export async function POST(request: NextRequest) {
         totalDays: 0,
       },
     });
-
-    // Dar conquista de primeiro dia
-    const firstDayAchievement = await db.achievement.findUnique({
-      where: { code: 'first_day' },
-    });
-
-    if (firstDayAchievement) {
-      await db.userAchievement.create({
-        data: {
-          userId: user.id,
-          achievementId: firstDayAchievement.id,
-        },
-      });
-    }
 
     const { password: _, ...userWithoutPassword } = user;
 
