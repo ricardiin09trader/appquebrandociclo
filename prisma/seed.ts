@@ -79,48 +79,6 @@ async function main() {
   }
 
   console.log('✅ Conquistas criadas/atualizadas!');
-
-  // Criar fases do programa
-  const phases = [
-    {
-      number: 1,
-      title: 'Mentalidade',
-      emoji: '🧠',
-      description: 'Prepare sua mente para a transformação',
-      color: 'from-purple-500 to-purple-600',
-    },
-    {
-      number: 2,
-      title: 'Hidratação',
-      emoji: '💧',
-      description: 'Descubra a importância da água',
-      color: 'from-blue-500 to-blue-600',
-    },
-    {
-      number: 3,
-      title: 'Comer Emocional',
-      emoji: '🍽️',
-      description: 'Identifique seus gatilhos',
-      color: 'from-pink-500 to-pink-600',
-    },
-    {
-      number: 4,
-      title: 'Plano Alimentar',
-      emoji: '🥗',
-      description: 'Seu menu de 1500kcal',
-      color: 'from-green-500 to-green-600',
-    },
-  ];
-
-  for (const phase of phases) {
-    await prisma.phase.upsert({
-      where: { number: phase.number },
-      update: phase,
-      create: phase,
-    });
-  }
-
-  console.log('✅ Fases criadas/atualizadas!');
 }
 
 main()
