@@ -7,7 +7,7 @@ import {
   Heart, Plus, Minus, Check, Droplets, Target, Download, X, 
   Share2, Award, Clock, Brain, Utensils, GlassWater, Dumbbell,
   Star, Zap, Lock, Unlock, Play, Pause, RotateCcw, Edit3, Search, Flame,
-  Sun, Moon, Smartphone, Info, XCircle, Share, ChevronDown
+  Sun, Moon, Smartphone, Info, XCircle, Share, ChevronDown, Mail, Eye, EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -659,23 +659,105 @@ function Confetti({ show }: { show: boolean }) {
 }
 
 // ============================================
-// LANDING PAGE
+// LANDING PAGE - COM LOGIN EMAIL
 // ============================================
 function LandingPage() {
   const { login } = useAppStore();
+  const [mode, setMode] = useState<'intro' | 'login' | 'register'>('intro');
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // Form data
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [weight, setWeight] = useState('');
+  const [goalWeight, setGoalWeight] = useState('');
 
-  const handleStart = () => {
-    if (name.trim()) {
-      const userId = 'user_' + Date.now();
-      login({
-        id: userId,
-        email: '',
-        name: name.trim(),
-        createdAt: new Date().toISOString(),
-        profile: { weight: 0, height: 0, goalWeight: 0, objective: 'lose', activityLevel: 'sedentary' },
-        progress: { xp: 0, level: 1, currentPhase: 1, streak: 0, totalDays: 0, phase1Progress: 0, phase2Progress: 0, phase3Progress: 0, phase4Progress: 0, phase5Progress: 0, phase6Progress: 0 },
-      }, userId);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Preencha todos os campos');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erro ao fazer login');
+        setLoading(false);
+        return;
+      }
+      login(data.user, data.userId);
+    } catch (err) {
+      setError('Erro de conexão');
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (step < 3) {
+      if (step === 1) {
+        if (!name || !email || !password) {
+          setError('Preencha todos os campos');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('As senhas não coincidem');
+          return;
+        }
+        if (password.length < 6) {
+          setError('A senha deve ter pelo menos 6 caracteres');
+          return;
+        }
+      }
+      if (step === 2 && !weight) {
+        setError('Informe seu peso atual');
+        return;
+      }
+      setStep(step + 1);
+      setError('');
+      return;
+    }
+
+    if (!goalWeight) {
+      setError('Informe sua meta de peso');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          weight: parseFloat(weight),
+          goalWeight: parseFloat(goalWeight),
+          objective: 'lose',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erro ao criar conta');
+        setLoading(false);
+        return;
+      }
+      login(data.user, data.userId);
+    } catch (err) {
+      setError('Erro de conexão');
+      setLoading(false);
     }
   };
 
@@ -684,66 +766,218 @@ function LandingPage() {
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-transparent" />
-        <div className="relative max-w-lg mx-auto px-6 py-12">
+        <div className="relative max-w-lg mx-auto px-6 py-8">
           <motion.div className="text-center" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl flex items-center justify-center shadow-xl">
-              <span className="text-5xl">🌱</span>
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl flex items-center justify-center shadow-xl">
+              <span className="text-4xl">🌱</span>
             </div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-3">Quebrando Ciclo</h1>
-            <p className="text-lg text-gray-600 mb-2">Sua jornada de transformação</p>
-            <p className="text-sm text-green-600 font-medium">✨ Do ponto A ao ponto B: sua solução definitiva</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Quebrando Ciclo</h1>
+            <p className="text-base text-gray-600">Sua jornada de transformação</p>
           </motion.div>
         </div>
       </div>
 
-      {/* Jornada */}
-      <div className="max-w-lg mx-auto px-6 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">🎯 Sua Jornada em 6 Fases</h2>
-        <div className="space-y-3">
-          {journeyPhases.map((phase, index) => (
-            <motion.div 
-              key={phase.id}
-              initial={{ x: -20, opacity: 0 }} 
-              animate={{ x: 0, opacity: 1 }} 
-              transition={{ delay: 0.1 * index }}
-              className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-md border border-gray-100"
-            >
-              <div className={`w-14 h-14 bg-gradient-to-r ${phase.color} rounded-xl flex items-center justify-center text-2xl shadow-md text-white`}>
-                {phase.emoji}
+      {/* Progress Steps */}
+      {mode === 'register' && (
+        <div className="flex items-center justify-center gap-2 mb-4">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                s < step ? 'bg-green-500 text-white' : s === step ? 'bg-green-500 text-white shadow-lg' : 'bg-gray-200 text-gray-400'
+              }`}>
+                {s < step ? '✓' : s}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-400">FASE {phase.id}</span>
-                  <span className="text-xs text-gray-300">•</span>
-                  <span className="text-xs text-gray-400">{phase.lessons.length} lições</span>
-                </div>
-                <h3 className="font-bold text-gray-800">{phase.title}</h3>
-                <p className="text-xs text-gray-500">{phase.description}</p>
-              </div>
-              <div className="flex items-center gap-1 text-yellow-500">
-                <Star className="h-4 w-4 fill-yellow-400" />
-                <span className="text-xs font-medium">+{phase.lessons.reduce((acc, l) => acc + l.xp, 0)} XP</span>
-              </div>
-            </motion.div>
+              {s < 3 && <div className={`w-10 h-1 mx-1 rounded ${s < step ? 'bg-green-500' : 'bg-gray-200'}`} />}
+            </div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* CTA */}
-      <div className="max-w-lg mx-auto px-6 py-8 pb-12">
-        <motion.div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
-          <h3 className="text-xl font-bold text-gray-800 text-center mb-4">Pronta para começar? 💚</h3>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name" className="text-gray-600">Como posso te chamar?</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-2 h-12 rounded-xl text-lg" />
-            </div>
-            <Button onClick={handleStart} disabled={!name.trim()} className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-xl text-lg font-semibold shadow-lg">
-              <Zap className="mr-2 h-5 w-5" /> Iniciar Minha Jornada
-            </Button>
+      {/* Intro Screen */}
+      {mode === 'intro' && (
+        <div className="max-w-lg mx-auto px-6">
+          <div className="space-y-3 mb-6">
+            {journeyPhases.slice(0, 4).map((phase, index) => (
+              <motion.div 
+                key={phase.id}
+                initial={{ x: -20, opacity: 0 }} 
+                animate={{ x: 0, opacity: 1 }} 
+                transition={{ delay: 0.1 * index }}
+                className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100"
+              >
+                <div className={`w-12 h-12 bg-gradient-to-r ${phase.color} rounded-xl flex items-center justify-center text-xl shadow-sm text-white`}>
+                  {phase.emoji}
+                </div>
+                <div className="flex-1">
+                  <span className="text-xs text-gray-400">Fase {phase.id}</span>
+                  <h3 className="font-semibold text-gray-800 text-sm">{phase.title}</h3>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        </motion.div>
-      </div>
+
+          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
+            <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Bem-vinda! 💚</h3>
+            <div className="space-y-3">
+              <Button onClick={() => setMode('login')} className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-xl font-semibold">
+                <Mail className="mr-2 h-5 w-5" /> Entrar com Email
+              </Button>
+              <Button onClick={() => setMode('register')} variant="outline" className="w-full h-12 rounded-xl font-semibold">
+                <User className="mr-2 h-5 w-5" /> Criar Conta
+              </Button>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-4">
+              Ao continuar, você aceita nossos termos de uso
+            </p>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Login Screen */}
+      {mode === 'login' && (
+        <div className="max-w-lg mx-auto px-6">
+          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Entrar 👋</h3>
+            
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+                <XCircle className="h-4 w-4 flex-shrink-0" /> {error}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-gray-600">Email</Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10 h-12" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-gray-600">Senha</Label>
+                <div className="relative mt-1">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sua senha" className="pl-10 pr-10 h-12" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+              <Button onClick={handleLogin} disabled={loading} className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600">
+                {loading ? 'Entrando...' : 'Entrar'}
+              </Button>
+              <button onClick={() => { setMode('intro'); setError(''); }} className="w-full text-sm text-gray-500 hover:text-gray-700">
+                Voltar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Register Screen */}
+      {mode === 'register' && (
+        <div className="max-w-lg mx-auto px-6">
+          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} key={step}>
+            {/* Step 1 */}
+            {step === 1 && (
+              <>
+                <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Criar Conta 🌟</h3>
+                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-600 text-sm">Nome</Label>
+                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-1 h-11" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-600 text-sm">Email</Label>
+                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1 h-11" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-600 text-sm">Senha</Label>
+                    <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="mt-1 h-11" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-600 text-sm">Confirmar Senha</Label>
+                    <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a senha" className="mt-1 h-11" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Step 2 */}
+            {step === 2 && (
+              <>
+                <div className="text-center mb-4">
+                  <div className="w-14 h-14 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                    <span className="text-2xl">⚖️</span>
+                  </div>
+                  <h3 className="text-lg font-bold">Qual é seu peso atual?</h3>
+                  <p className="text-gray-500 text-sm">Isso nos ajuda a calcular sua meta de água</p>
+                </div>
+                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-600 text-sm">Peso atual (kg)</Label>
+                    <Input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ex: 70" className="mt-1 h-14 text-lg text-center" />
+                  </div>
+                  {weight && (
+                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <p className="text-sm text-blue-600">💧 <strong>Meta de água:</strong> {Math.ceil((parseFloat(weight) * 35) / 250)} copos/dia</p>
+                      <p className="text-xs text-blue-500">({Math.round(parseFloat(weight) * 35)}ml = peso × 35ml)</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Step 3 */}
+            {step === 3 && (
+              <>
+                <div className="text-center mb-4">
+                  <div className="w-14 h-14 mx-auto bg-amber-100 rounded-full flex items-center justify-center mb-3">
+                    <Target className="h-7 w-7 text-amber-600" />
+                  </div>
+                  <h3 className="text-lg font-bold">Qual é sua meta?</h3>
+                  <p className="text-gray-500 text-sm">O objetivo que deseja alcançar</p>
+                </div>
+                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-600 text-sm">Peso meta (kg)</Label>
+                    <Input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} placeholder="Ex: 60" className="mt-1 h-14 text-lg text-center" />
+                  </div>
+                  {weight && goalWeight && (
+                    <div className="bg-gradient-to-r from-green-50 to-amber-50 rounded-xl p-4 text-center">
+                      <p className="text-sm text-gray-700">🎯 <strong>Olá, {name}!</strong></p>
+                      <p className="text-sm text-gray-600 mt-2">Você vai sair de <strong>{weight}kg</strong> e chegar a <strong>{goalWeight}kg</strong></p>
+                      <p className="text-lg font-bold text-green-600 mt-2">Perda de {(parseFloat(weight) - parseFloat(goalWeight)).toFixed(1)}kg 🌟</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-5">
+              {step > 1 ? (
+                <>
+                  <Button onClick={() => setStep(step - 1)} variant="outline" className="flex-1 h-11" disabled={loading}>Voltar</Button>
+                  <Button onClick={handleRegister} className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600" disabled={loading}>
+                    {loading ? 'Criando...' : step === 3 ? 'Iniciar Jornada' : 'Continuar'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => { setMode('intro'); setError(''); }} variant="outline" className="flex-1 h-11">Voltar</Button>
+                  <Button onClick={handleRegister} className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600">Continuar</Button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      <div className="h-8" />
     </motion.div>
   );
 }

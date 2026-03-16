@@ -20,6 +20,8 @@ model User {
   email        String   @unique
   password     String
   name         String
+  isAdmin      Boolean  @default(false)
+  lastActivity DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   
@@ -37,12 +39,12 @@ model UserProfile {
   userId       String   @unique
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  weight       Float    // Peso atual em kg
-  height       Float    // Altura em cm
-  goalWeight   Float    // Meta de peso
+  weight       Float    @default(0)  // Peso atual em kg
+  height       Float    @default(0) // Altura em cm
+  goalWeight   Float    @default(0) // Meta de peso
   birthDate    DateTime?
-  objective    String?  // "lose", "maintain", "gain"
-  activityLevel String? // "sedentary", "light", "moderate", "active"
+  objective    String   @default("lose")  // "lose", "maintain", "gain"
+  activityLevel String  @default("sedentary") // "sedentary", "light", "moderate", "active"
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -55,7 +57,7 @@ model UserProgress {
   
   xp           Int      @default(0)
   level        Int      @default(1)
-  currentPhase Int      @default(1)    // 1-5
+  currentPhase Int      @default(1)
   streak       Int      @default(0)    // Dias consecutivos
   totalDays    Int      @default(0)    // Total de dias no app
   lastCheckIn  DateTime?
@@ -77,11 +79,11 @@ model UserProgress {
 
 model Phase {
   id          String   @id @default(cuid())
-  number      Int      @unique    // 1-5
+  number      Int      @unique
   title       String
   emoji       String
   description String
-  color       String   // Cor tema da fase
+  color       String
   
   contents    PhaseContent[]
   
@@ -94,10 +96,10 @@ model PhaseContent {
   phaseId     String
   phase       Phase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   
-  order       Int                 // Ordem do conteúdo
+  order       Int
   title       String
-  content     String              // Texto/HTML do conteúdo
-  type        String              // "text", "exercise", "tip", "quote"
+  content     String
+  type        String   @default("text")
   isExercise  Boolean  @default(false)
   exerciseQuestion String?
   
@@ -115,12 +117,12 @@ model Recipe {
   id           String   @id @default(cuid())
   name         String
   description  String?
-  category     String   // "cafe_salgado", "cafe_doce", "principal", "lanche_doce", "lanche_salgado", "vegetariana", "proteina", "sopa"
+  category     String
   calories     Int
-  prepTime     Int?     // Tempo em minutos
+  prepTime     Int?
   servings     Int      @default(1)
-  ingredients  String   // JSON array
-  instructions String   // JSON array
+  ingredients  String
+  instructions String
   imageUrl     String?
   tips         String?
   
@@ -134,9 +136,9 @@ model Juice {
   id           String   @id @default(cuid())
   name         String
   description  String?
-  benefits     String   // JSON array
-  ingredients  String   // JSON array
-  instructions String   // JSON array
+  benefits     String
+  ingredients  String
+  instructions String
   imageUrl     String?
   prepTime     Int?
   
@@ -169,10 +171,10 @@ model Favorite {
 
 model MealPlan {
   id           String   @id @default(cuid())
-  dayOfWeek    Int      // 1-7 (Seg-Dom)
-  mealType     String   // "cafe_manha", "almoco", "lanche_tarde", "jantar", "ceia"
+  dayOfWeek    Int
+  mealType     String
   description  String
-  options      String?  // JSON array com opções/substituições
+  options      String?
   calories     Int?
   
   createdAt    DateTime @default(now())
@@ -211,8 +213,8 @@ model Achievement {
   description String
   emoji       String
   xpReward    Int
-  category    String   // "streak", "phase", "special", "water", "meals"
-  requirement String   // JSON com requisitos
+  category    String
+  requirement String
   
   userAchievements UserAchievement[]
   
@@ -241,8 +243,8 @@ model WaterIntake {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime
   
-  glasses   Int      @default(0)  // Copos de 250ml
-  goal      Int      // Meta diária calculada
+  glasses   Int      @default(0)
+  goal      Int      @default(8)
   
   createdAt DateTime @default(now())
   
@@ -270,7 +272,7 @@ model MotivationalQuote {
   id        String   @id @default(cuid())
   quote     String
   author    String?
-  category  String?  // "mentalidade", "agua", "alimentacao", "exercicio", "geral"
+  category  String?
   
   createdAt DateTime @default(now())
 }
