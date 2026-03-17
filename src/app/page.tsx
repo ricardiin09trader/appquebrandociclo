@@ -47,6 +47,54 @@ const motivationalPhrases = [
 ];
 
 // ============================================
+// GUIA DE GAMIFICAÇÃO - COMO FUNCIONA
+// ============================================
+const GAMIFICATION_GUIDE = {
+  title: "Como Funciona o Sistema de Pontos",
+  sections: [
+    {
+      title: "🎯 Ganhe XP (Experiência)",
+      items: [
+        "Complete lições das fases: +20-40 XP",
+        "Faça check-in diário: +20 XP",
+        "Mantenha sequência de dias: +10 XP/dia",
+        "Desbloqueie conquistas: +50-500 XP"
+      ]
+    },
+    {
+      title: "⬆️ Suba de Nível",
+      items: [
+        "Nível 1 → Iniciante (0 XP)",
+        "Nível 2 → Aprendiz (100 XP)",
+        "Nível 3 → Dedicada (250 XP)",
+        "Nível 4 → Consciente (500 XP)",
+        "Nível 5 → Transformadora (800 XP)",
+        "Nível 6 → Inspiração (1200 XP)",
+        "Nível 7 → Mestra (1700 XP)",
+        "Nível 8 → Lenda (2500 XP) 👑"
+      ]
+    },
+    {
+      title: "🔓 Desbloqueie Conteúdos",
+      items: [
+        "Complete Fase 1 (Mentalidade) e Fase 2 (Fome Emocional)",
+        "O Plano Alimentar será liberado automaticamente",
+        "Quanto mais XP, mais conquistas você desbloqueia!"
+      ]
+    },
+    {
+      title: "🏆 Conquistas Especiais",
+      items: [
+        "Primeiro Passo - Faça login",
+        "Semana Perfeita - 7 dias seguidos",
+        "Mês Incrível - 30 dias seguidos",
+        "Transformação Completa - Complete todas as fases"
+      ]
+    }
+  ]
+};
+
+// ============================================
 // JORNADA GAMIFICADA - FASES E LIÇÕES
 // ============================================
 const journeyPhases = [
@@ -192,57 +240,10 @@ Celebre cada conquista, por menor que seja.`,
   },
   {
     id: 2,
-    title: "Hidratação",
-    emoji: "💧",
-    color: "from-blue-500 to-blue-600",
-    description: "Descubra a importância da água",
-    lessons: [
-      {
-        id: 1,
-        title: "O Poder da Água",
-        content: `# O Poder da Água na Transformação 💧
-
-## Por que a água é tão importante?
-
-A água é essencial para todas as funções do corpo. Ela:
-- Regula a temperatura corporal
-- Auxilia na digestão
-- Elimina toxinas
-- Mantém a pele saudável
-- Melhora o funcionamento do cérebro
-- Auxilia na perda de peso
-
-## Cálculo da sua Meta Diária 📊
-
-**Fórmula:** Seu peso × 35 = ml de água por dia
-
-### Exemplo:
-Maria tem 60kg
-60 × 35 = 2.100ml
-Maria deve tomar 2 litros e 100ml por dia
-
-## Dicas Práticas 💡
-
-✅ Ande sempre com uma garrafinha bonitinha
-✅ Defina alarmes para lembrar de beber água
-✅ Beba um copo antes de cada refeição
-✅ Adicione limão, hortelã ou frutas para dar sabor
-✅ Comece o dia com um copo de água em jejum`,
-        exercises: [
-          { question: "Qual é o seu peso atual? (para calcular sua meta de água)", placeholder: "Ex: 70kg" },
-          { question: "Quantos copos de água você bebe atualmente por dia?", placeholder: "Ex: 4 copos" },
-          { question: "Qual estratégia você vai usar para aumentar seu consumo de água?", placeholder: "Descreva sua estratégia..." },
-        ],
-        xp: 25,
-      },
-    ],
-  },
-  {
-    id: 3,
-    title: "Comer Emocional",
+    title: "Fome Emocional",
     emoji: "🍽️",
     color: "from-pink-500 to-pink-600",
-    description: "Identifique seus gatilhos",
+    description: "Identifique seus gatilhos emocionais",
     lessons: [
       {
         id: 1,
@@ -349,6 +350,53 @@ Agora que você identificou suas emoções, vamos encontrar alternativas para ca
           { question: "Quais novas alternativas você pretende implementar?", placeholder: "Descreva seu plano..." },
         ],
         xp: 40,
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: "Hidratação",
+    emoji: "💧",
+    color: "from-blue-500 to-blue-600",
+    description: "Descubra a importância da água",
+    lessons: [
+      {
+        id: 1,
+        title: "O Poder da Água",
+        content: `# O Poder da Água na Transformação 💧
+
+## Por que a água é tão importante?
+
+A água é essencial para todas as funções do corpo. Ela:
+- Regula a temperatura corporal
+- Auxilia na digestão
+- Elimina toxinas
+- Mantém a pele saudável
+- Melhora o funcionamento do cérebro
+- Auxilia na perda de peso
+
+## Cálculo da sua Meta Diária 📊
+
+**Fórmula:** Seu peso × 35 = ml de água por dia
+
+### Exemplo:
+Maria tem 60kg
+60 × 35 = 2.100ml
+Maria deve tomar 2 litros e 100ml por dia
+
+## Dicas Práticas 💡
+
+✅ Ande sempre com uma garrafinha bonitinha
+✅ Defina alarmes para lembrar de beber água
+✅ Beba um copo antes de cada refeição
+✅ Adicione limão, hortelã ou frutas para dar sabor
+✅ Comece o dia com um copo de água em jejum`,
+        exercises: [
+          { question: "Qual é o seu peso atual? (para calcular sua meta de água)", placeholder: "Ex: 70kg" },
+          { question: "Quantos copos de água você bebe atualmente por dia?", placeholder: "Ex: 4 copos" },
+          { question: "Qual estratégia você vai usar para aumentar seu consumo de água?", placeholder: "Descreva sua estratégia..." },
+        ],
+        xp: 25,
       },
     ],
   },
@@ -649,8 +697,15 @@ const GAMIFICATION_CONFIG = {
   ],
   
   // Fases necessárias para desbloquear plano alimentar
+  // Fase 1 (Mentalidade) + Fase 2 (Fome Emocional) = 2 fases
   REQUIRED_PHASES_FOR_MEAL_PLAN: 2,
-  LESSONS_PER_PHASE: [4, 1, 3, 1], // Lições em cada fase
+  
+  // Lições em cada fase (NOVA ORDEM):
+  // Fase 1: Mentalidade = 4 lições
+  // Fase 2: Fome Emocional = 3 lições
+  // Fase 3: Hidratação = 1 lição
+  // Fase 4: Plano Alimentar = 1 lição
+  LESSONS_PER_PHASE: [4, 3, 1, 1],
 };
 
 // Função para calcular nível baseado no XP
@@ -676,15 +731,25 @@ function calculateLevel(xp: number) {
 }
 
 // Verificar se pode acessar plano alimentar
-function canAccessMealPlan(progress: UserProgress): { canAccess: boolean; completedPhases: number; totalRequired: number } {
+// REQUISITO: Completar Fase 1 (Mentalidade) E Fase 2 (Fome Emocional)
+function canAccessMealPlan(progress: UserProgress): { canAccess: boolean; phase1Complete: boolean; phase2Complete: boolean; message: string } {
   const phase1Complete = progress.phase1Lessons.length >= GAMIFICATION_CONFIG.LESSONS_PER_PHASE[0];
   const phase2Complete = progress.phase2Lessons.length >= GAMIFICATION_CONFIG.LESSONS_PER_PHASE[1];
-  const completedPhases = (phase1Complete ? 1 : 0) + (phase2Complete ? 1 : 0);
+  
+  let message = '';
+  if (!phase1Complete && !phase2Complete) {
+    message = 'Complete a Fase 1 (Mentalidade) e a Fase 2 (Fome Emocional) para desbloquear';
+  } else if (!phase1Complete) {
+    message = 'Complete a Fase 1 (Mentalidade) para desbloquear';
+  } else if (!phase2Complete) {
+    message = 'Complete a Fase 2 (Fome Emocional) para desbloquear';
+  }
   
   return {
     canAccess: phase1Complete && phase2Complete,
-    completedPhases,
-    totalRequired: GAMIFICATION_CONFIG.REQUIRED_PHASES_FOR_MEAL_PLAN
+    phase1Complete,
+    phase2Complete,
+    message
   };
 }
 
@@ -1284,26 +1349,65 @@ function Dashboard() {
       </div>
       
       <div className="p-4 space-y-6">
-        {/* Como Funciona Card */}
-        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Zap className="h-5 w-5 text-white" />
+        {/* Como Funciona Card - Guia Completo */}
+        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-md overflow-hidden">
+          <CardContent className="p-0">
+            <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Zap className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">🎮 Sistema de Pontos & XP</h3>
+                  <p className="text-purple-100 text-sm">Entenda como funciona sua evolução</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-purple-800">🎮 Como Funciona a Gamificação</h3>
-                <div className="mt-2 space-y-2 text-sm text-purple-700">
-                  <p>✅ <strong>+20 XP</strong> por missão completada</p>
-                  <p>📚 <strong>+25 XP</strong> por lição lida</p>
-                  <p>🔥 <strong>+10 XP</strong> por dia de sequência</p>
-                  <p>🏆 <strong>+50 XP</strong> por conquista desbloqueada</p>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              {/* Ganhe XP */}
+              <div>
+                <h4 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                  🎯 Como Ganhar XP
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white rounded-lg p-2 border border-purple-100">
+                    <p className="text-xs text-gray-500">Lições</p>
+                    <p className="font-bold text-purple-600">+20-40 XP</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-2 border border-purple-100">
+                    <p className="text-xs text-gray-500">Check-in</p>
+                    <p className="font-bold text-purple-600">+20 XP</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-2 border border-purple-100">
+                    <p className="text-xs text-gray-500">Sequência</p>
+                    <p className="font-bold text-purple-600">+10 XP/dia</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-2 border border-purple-100">
+                    <p className="text-xs text-gray-500">Conquistas</p>
+                    <p className="font-bold text-purple-600">+50-500 XP</p>
+                  </div>
                 </div>
-                <div className="mt-3 pt-2 border-t border-purple-200">
-                  <p className="text-xs text-purple-600">
-                    💡 Complete a <strong>Fase 1 e 2</strong> para desbloquear o Plano Alimentar!
-                  </p>
+              </div>
+              
+              {/* Níveis */}
+              <div>
+                <h4 className="font-semibold text-purple-800 mb-2">⬆️ Níveis</h4>
+                <div className="flex flex-wrap gap-1">
+                  {GAMIFICATION_CONFIG.LEVELS.map((lvl) => (
+                    <span key={lvl.level} className="text-xs bg-white border border-purple-100 rounded-full px-2 py-1">
+                      {lvl.emoji} {lvl.name}
+                    </span>
+                  ))}
                 </div>
+              </div>
+              
+              {/* Desbloqueio */}
+              <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                <h4 className="font-semibold text-amber-800 mb-1">🔓 Desbloqueio do Plano Alimentar</h4>
+                <p className="text-sm text-amber-700">
+                  Complete <strong>Fase 1 (Mentalidade)</strong> + <strong>Fase 2 (Fome Emocional)</strong> para liberar!
+                </p>
               </div>
             </div>
           </CardContent>
@@ -2183,9 +2287,9 @@ function MealPlanScreen() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      userProgress.phase1Lessons.length >= 4 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                      accessStatus.phase1Complete ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
                     }`}>
-                      {userProgress.phase1Lessons.length >= 4 ? <Check className="h-5 w-5" /> : <span className="text-sm font-bold">1</span>}
+                      {accessStatus.phase1Complete ? <Check className="h-5 w-5" /> : <span className="text-sm font-bold">1</span>}
                     </div>
                     <div className="flex-1 text-left">
                       <p className="font-medium text-gray-800">Fase 1: Mentalidade</p>
@@ -2196,15 +2300,15 @@ function MealPlanScreen() {
                   
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      userProgress.phase2Lessons.length >= 1 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                      accessStatus.phase2Complete ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
                     }`}>
-                      {userProgress.phase2Lessons.length >= 1 ? <Check className="h-5 w-5" /> : <span className="text-sm font-bold">2</span>}
+                      {accessStatus.phase2Complete ? <Check className="h-5 w-5" /> : <span className="text-sm font-bold">2</span>}
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-medium text-gray-800">Fase 2: Hidratação</p>
-                      <p className="text-xs text-gray-500">{userProgress.phase2Lessons.length}/1 lições completas</p>
+                      <p className="font-medium text-gray-800">Fase 2: Fome Emocional</p>
+                      <p className="text-xs text-gray-500">{userProgress.phase2Lessons.length}/3 lições completas</p>
                     </div>
-                    <Progress value={(userProgress.phase2Lessons.length / 1) * 100} className="w-20 h-2" />
+                    <Progress value={(userProgress.phase2Lessons.length / 3) * 100} className="w-20 h-2" />
                   </div>
                 </div>
               </CardContent>
@@ -2219,7 +2323,7 @@ function MealPlanScreen() {
                     <h4 className="font-semibold text-amber-800">Por que bloqueado?</h4>
                     <p className="text-sm text-amber-700 mt-1">
                       Acreditamos que a transformação começa na mente. Por isso, você precisa completar as fases de 
-                      <strong> Mentalidade</strong> e <strong> Hidratação</strong> antes de acessar o plano alimentar. 
+                      <strong> Mentalidade</strong> e <strong> Fome Emocional</strong> antes de acessar o plano alimentar. 
                       Esse processo garante que você esteja preparada para seguir o plano com consciência!
                     </p>
                   </div>
