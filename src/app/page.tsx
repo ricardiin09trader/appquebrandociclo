@@ -627,6 +627,68 @@ interface UserProgress {
 }
 
 // ============================================
+// SISTEMA DE GAMIFICAÇÃO
+// ============================================
+const GAMIFICATION_CONFIG = {
+  // XP por ação
+  XP_PER_CHECKIN_MISSION: 20,
+  XP_PER_LESSON: 25,
+  XP_PER_DAY_STREAK: 10,
+  XP_PER_ACHIEVEMENT: 50,
+  
+  // Níveis
+  LEVELS: [
+    { level: 1, name: 'Iniciante', minXP: 0, emoji: '🌱' },
+    { level: 2, name: 'Aprendiz', minXP: 100, emoji: '🌿' },
+    { level: 3, name: 'Dedicada', minXP: 250, emoji: '🍃' },
+    { level: 4, name: 'Consciente', minXP: 500, emoji: '🌸' },
+    { level: 5, name: 'Transformadora', minXP: 800, emoji: '🌺' },
+    { level: 6, name: 'Inspiração', minXP: 1200, emoji: '⭐' },
+    { level: 7, name: 'Mestra', minXP: 1700, emoji: '🌟' },
+    { level: 8, name: 'Lenda', minXP: 2500, emoji: '👑' },
+  ],
+  
+  // Fases necessárias para desbloquear plano alimentar
+  REQUIRED_PHASES_FOR_MEAL_PLAN: 2,
+  LESSONS_PER_PHASE: [4, 1, 3, 1], // Lições em cada fase
+};
+
+// Função para calcular nível baseado no XP
+function calculateLevel(xp: number) {
+  const levels = GAMIFICATION_CONFIG.LEVELS;
+  for (let i = levels.length - 1; i >= 0; i--) {
+    if (xp >= levels[i].minXP) {
+      const nextLevel = levels[i + 1];
+      const progress = nextLevel 
+        ? ((xp - levels[i].minXP) / (nextLevel.minXP - levels[i].minXP)) * 100
+        : 100;
+      return { 
+        level: levels[i].level, 
+        name: levels[i].name, 
+        emoji: levels[i].emoji,
+        currentXP: xp - levels[i].minXP,
+        xpForNext: nextLevel ? nextLevel.minXP - levels[i].minXP : 0,
+        progress: Math.min(progress, 100)
+      };
+    }
+  }
+  return { level: 1, name: 'Iniciante', emoji: '🌱', currentXP: xp, xpForNext: 100, progress: (xp / 100) * 100 };
+}
+
+// Verificar se pode acessar plano alimentar
+function canAccessMealPlan(progress: UserProgress): { canAccess: boolean; completedPhases: number; totalRequired: number } {
+  const phase1Complete = progress.phase1Lessons.length >= GAMIFICATION_CONFIG.LESSONS_PER_PHASE[0];
+  const phase2Complete = progress.phase2Lessons.length >= GAMIFICATION_CONFIG.LESSONS_PER_PHASE[1];
+  const completedPhases = (phase1Complete ? 1 : 0) + (phase2Complete ? 1 : 0);
+  
+  return {
+    canAccess: phase1Complete && phase2Complete,
+    completedPhases,
+    totalRequired: GAMIFICATION_CONFIG.REQUIRED_PHASES_FOR_MEAL_PLAN
+  };
+}
+
+// ============================================
 // ANIMAÇÕES
 // ============================================
 const fadeIn = {
@@ -1199,26 +1261,54 @@ function Dashboard() {
           </div>
         </div>
         
-        {/* Progress Bar */}
+        {/* Progress Bar with Level */}
         <div className="bg-white/10 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm">Nível {displayLevel}</span>
+              <span className="text-lg">{calculateLevel(displayXp).emoji}</span>
+              <span className="text-sm font-semibold">{calculateLevel(displayXp).name}</span>
               <span className="text-xs bg-yellow-400/20 text-yellow-200 px-2 py-0.5 rounded-full">
-                {displayXp} XP
+                Nível {calculateLevel(displayXp).level}
               </span>
             </div>
             <span className="text-xs">{progressPercent}% completo</span>
           </div>
-          <Progress value={(displayXp % 100)} className="h-2 bg-white/20" />
+          <Progress value={calculateLevel(displayXp).progress} className="h-2 bg-white/20" />
           <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-green-100">
+              {calculateLevel(displayXp).currentXP}/{calculateLevel(displayXp).xpForNext || '∞'} XP para próximo nível
+            </span>
             <span className="text-xs text-green-100">🔥 {displayStreak} dias seguidos</span>
-            <span className="text-xs text-green-100">{completedLessons}/{totalLessons} lições</span>
           </div>
         </div>
       </div>
       
       <div className="p-4 space-y-6">
+        {/* Como Funciona Card */}
+        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-md">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-purple-800">🎮 Como Funciona a Gamificação</h3>
+                <div className="mt-2 space-y-2 text-sm text-purple-700">
+                  <p>✅ <strong>+20 XP</strong> por missão completada</p>
+                  <p>📚 <strong>+25 XP</strong> por lição lida</p>
+                  <p>🔥 <strong>+10 XP</strong> por dia de sequência</p>
+                  <p>🏆 <strong>+50 XP</strong> por conquista desbloqueada</p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-purple-200">
+                  <p className="text-xs text-purple-600">
+                    💡 Complete a <strong>Fase 1 e 2</strong> para desbloquear o Plano Alimentar!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         {/* Quote */}
         {quote && (
           <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-0 shadow-md">
@@ -2034,6 +2124,17 @@ function MealPlanScreen() {
   const [selectedMeal, setSelectedMeal] = useState<'cafe_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'>('cafe_manha');
   const [showSubstitutions, setShowSubstitutions] = useState<string | null>(null);
   const [showGuidelines, setShowGuidelines] = useState(false);
+  
+  // Verificar progresso para bloqueio
+  const [userProgress, setUserProgress] = useState<UserProgress>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('quebrando-ciclo-progress');
+      if (saved) return JSON.parse(saved);
+    }
+    return { phase1Lessons: [], phase2Lessons: [], phase3Lessons: [], phase4Lessons: [], exerciseAnswers: {} };
+  });
+  
+  const accessStatus = canAccessMealPlan(userProgress);
 
   const mealOrder = ['cafe_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia'] as const;
   const currentMeal = completeMealPlan[selectedMeal];
@@ -2049,6 +2150,97 @@ function MealPlanScreen() {
     { icon: '⚠️', title: 'Sem temperos artificiais', desc: 'Não use Arisco, Sazon ou produtos com aditivos' },
     { icon: '📅', title: 'Duração', desc: 'A dieta tem duração de 30 dias. Consulte seu nutricionista após' },
   ];
+
+  // TELA DE BLOQUEIO - Se não completou as fases necessárias
+  if (!accessStatus.canAccess) {
+    return (
+      <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5 rounded-b-3xl">
+          <button onClick={() => setCurrentView('dashboard')} className="flex items-center text-white/80 mb-3"><ChevronLeft className="h-5 w-5" /> Voltar</button>
+          <h1 className="text-2xl font-bold">Plano Alimentar 🔒</h1>
+          <p className="text-amber-100 mt-1 text-sm">Conteúdo bloqueado</p>
+        </div>
+        
+        <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center"
+          >
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mb-6">
+              <Lock className="h-12 w-12 text-amber-600" />
+            </div>
+            
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Plano Alimentar Bloqueado</h2>
+            <p className="text-gray-500 mb-6 max-w-sm">
+              Complete as primeiras fases da jornada para desbloquear o plano alimentar completo.
+            </p>
+            
+            {/* Progress Card */}
+            <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-lg mb-6">
+              <CardContent className="p-5">
+                <h3 className="font-semibold text-purple-800 mb-3">📊 Seu Progresso</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      userProgress.phase1Lessons.length >= 4 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {userProgress.phase1Lessons.length >= 4 ? <Check className="h-5 w-5" /> : <span className="text-sm font-bold">1</span>}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-gray-800">Fase 1: Mentalidade</p>
+                      <p className="text-xs text-gray-500">{userProgress.phase1Lessons.length}/4 lições completas</p>
+                    </div>
+                    <Progress value={(userProgress.phase1Lessons.length / 4) * 100} className="w-20 h-2" />
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      userProgress.phase2Lessons.length >= 1 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {userProgress.phase2Lessons.length >= 1 ? <Check className="h-5 w-5" /> : <span className="text-sm font-bold">2</span>}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-gray-800">Fase 2: Hidratação</p>
+                      <p className="text-xs text-gray-500">{userProgress.phase2Lessons.length}/1 lições completas</p>
+                    </div>
+                    <Progress value={(userProgress.phase2Lessons.length / 1) * 100} className="w-20 h-2" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Why Blocked */}
+            <Card className="bg-amber-50 border-amber-200 shadow-sm mb-6">
+              <CardContent className="p-4 text-left">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">💡</div>
+                  <div>
+                    <h4 className="font-semibold text-amber-800">Por que bloqueado?</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Acreditamos que a transformação começa na mente. Por isso, você precisa completar as fases de 
+                      <strong> Mentalidade</strong> e <strong> Hidratação</strong> antes de acessar o plano alimentar. 
+                      Esse processo garante que você esteja preparada para seguir o plano com consciência!
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Button 
+              onClick={() => setCurrentView('phases')}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 px-8"
+            >
+              <BookOpen className="mr-2 h-5 w-5" />
+              Ir para Jornada
+            </Button>
+          </motion.div>
+        </div>
+        
+        <BottomNav />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
