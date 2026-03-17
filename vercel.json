@@ -1,15 +1,8 @@
 {
   "version": 2,
   "name": "quebrando-ciclo",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "DIRECT_DATABASE_URL": "@direct_database_url",
-    "ADMIN_SECRET": "@admin_secret"
-  }
+  "buildCommand": "prisma generate && prisma db push --accept-data-loss && next build",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "regions": ["gru1"]
 }
