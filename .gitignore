@@ -51,4 +51,6 @@ prompt
 
 server.log
 # Skills directory
-/skills/
+/skills/serve-static.js
+serve-static.js
+tool-results/
