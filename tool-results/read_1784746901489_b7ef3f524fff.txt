@@ -1,0 +1,518 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useMemo, useCallback } from 'react';
+     4→     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→     5→import ReactMarkdown from 'react-markdown';
+     6→     6→import {
+     7→     7→  Home, BookOpen, UtensilsCrossed, Trophy, User, ChevronLeft, ChevronRight,
+     8→     8→  Heart, Plus, Minus, Check, Droplets, Clock, Search, X, Star, Dumbbell, Edit3, LogOut, Menu
+     9→     9→} from 'lucide-react';
+    10→    10→import { Button } from '@/components/ui/button';
+    11→    11→import { Progress } from '@/components/ui/progress';
+    12→    12→import { Card, CardContent } from '@/components/ui/card';
+    13→    13→import { Input } from '@/components/ui/input';
+    14→    14→import { Label } from '@/components/ui/label';
+    15→    15→import { Textarea } from '@/components/ui/textarea';
+    16→    16→import { useAppStore } from '@/store/useAppStore';
+    17→    17→import { phases, getTotalLessons } from '@/data/phases';
+    18→    18→import { getRandomPhrase } from '@/data/phrases';
+    19→    19→import { mealPlan, nutritionalGuidelines } from '@/data/mealplan';
+    20→    20→import { workoutPlan } from '@/data/workout';
+    21→    21→import { achievements } from '@/data/achievements';
+    22→    22→import { recipes, categoryLabels } from '@/data/recipes';
+    23→    23→import { juices } from '@/data/juices';
+    24→    24→import type { Recipe } from '@/data/recipes';
+    25→    25→import type { Juice } from '@/data/juices';
+    26→    26→
+    27→    27→const fade = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 } };
+    28→    28→const navItems = [
+    29→    29→  { view: 'dashboard' as const, icon: Home, label: 'Início' },
+    30→    30→  { view: 'phases' as const, icon: BookOpen, label: 'Jornada' },
+    31→    31→  { view: 'nutrition' as const, icon: UtensilsCrossed, label: 'Nutrição' },
+    32→    32→  { view: 'achievements' as const, icon: Trophy, label: 'Conquistas' },
+    33→    33→  { view: 'profile' as const, icon: User, label: 'Perfil' },
+    34→    34→];
+    35→    35→
+    36→    36→export default function App() {
+    37→    37→  const store = useAppStore();
+    38→    38→  const { user, currentView } = store;
+    39→    39→  const [phrase] = useState(() => getRandomPhrase());
+    40→    40→  const [activeLesson, setActiveLesson] = useState<number | null>(null);
+    41→    41→  const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
+    42→    42→  const [searchQuery, setSearchQuery] = useState('');
+    43→    43→  const [selectedMealTab, setSelectedMealTab] = useState(0);
+    44→    44→  const [selectedWorkoutDay, setSelectedWorkoutDay] = useState(0);
+    45→    45→  const [workoutChecks, setWorkoutChecks] = useState<Record<string, boolean>>({});
+    46→    46→  const [onboardStep, setOnboardStep] = useState(0);
+    47→    47→  const [form, setForm] = useState({ name: '', email: '', weight: '', goalWeight: '', height: '' });
+    48→    48→  const [editing, setEditing] = useState(false);
+    49→    49→  const [editForm, setEditForm] = useState({ weight: '', goalWeight: '', height: '' });
+    50→    50→  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+    51→    51→  const [showGuide, setShowGuide] = useState(false);
+    52→    52→  const [nutritionTab, setNutritionTab] = useState<'recipes' | 'juices'>('recipes');
+    53→    53→  const [recipeFilter, setRecipeFilter] = useState<string>('all');
+    54→    54→
+    55→    55→  useEffect(() => {
+    56→    56→    const saved = localStorage.getItem('qc-workout');
+    57→    57→    if (saved) setWorkoutChecks(JSON.parse(saved));
+    58→    58→  }, []);
+    59→    59→  useEffect(() => { localStorage.setItem('qc-workout', JSON.stringify(workoutChecks)); }, [workoutChecks]);
+    60→    60→  useEffect(() => { if (user) setEditForm({ weight: String(user.weight), goalWeight: String(user.goalWeight), height: String(user.height) }); }, [user]);
+    61→    61→  useEffect(() => { setActiveLesson(null); setExerciseAnswers({}); setRecipeFilter('all'); setSearchQuery(''); }, [currentView]);
+    62→    62→
+    63→    63→  const completedCount = store.getCompletedCount();
+    64→    64→  const totalL = getTotalLessons();
+    65→    65→  const level = Math.floor(completedCount / 2) + 1;
+    66→    66→  const progressPct = totalL > 0 ? (completedCount / totalL) * 100 : 0;
+    67→    67→
+    68→    68→  const toggleWorkoutCheck = (key: string) => setWorkoutChecks(p => ({ ...p, [key]: !p[key] }));
+    69→    69→
+    70→    70→  const isUnlocked = useCallback((a: typeof achievements[0]) => {
+    71→    71→    const cc = completedCount;
+    72→    72→    const isPhaseComplete = (pid: number) => phases.find(p => p.id === pid)?.lessons.every(l => store.isLessonCompleted(pid, l.id)) ?? false;
+    73→    73→    switch (a.requirement) {
+    74→    74→      case '1 lição': return cc >= 1;
+    75→    75→      case '5 lições': return cc >= 5;
+    76→    76→      case 'Fase 1': return isPhaseComplete(1);
+    77→    77→      case 'Fase 2': return isPhaseComplete(2);
+    78→    78→      case 'Fase 3': return isPhaseComplete(3);
+    79→    79→      case 'Fase 4': return isPhaseComplete(4);
+    80→    80→      case '5 favoritos': return store.favorites.length >= 5;
+    81→    81→      case '100%': return cc === totalL;
+    82→    82→      case '50%': return cc >= Math.floor(totalL / 2);
+    83→    83→      default: return false;
+    84→    84→    }
+    85→    85→  }, [completedCount, store, totalL]);
+    86→    86→
+    87→    87→  // ============== ONBOARDING ==============
+    88→    88→  if (!user) {
+    89→    89→    return (
+    90→    90→      <div className="min-h-screen bg-gradient-to-b from-green-500 to-green-700 flex flex-col items-center justify-center p-6 text-white">
+    91→    91→        <AnimatePresence mode="wait">
+    92→    92→          {onboardStep === 0 && (
+    93→    93→            <motion.div key="welcome" {...fade} className="text-center max-w-sm">
+    94→    94→              <div className="text-7xl mb-6">🌱</div>
+    95→    95→              <h1 className="text-3xl font-bold mb-3">Quebrando Ciclo</h1>
+    96→    96→              <p className="text-green-100 text-lg mb-2">Sua jornada de transformação começa aqui</p>
+    97→    97→              <p className="text-green-200 text-sm mb-8">Vamos quebrar os ciclos de maus hábitos alimentares e construir uma relação saudável com a comida.</p>
+    98→    98→              <Button size="lg" className="bg-white text-green-700 hover:bg-green-50 rounded-full px-8 text-lg" onClick={() => setOnboardStep(1)}>Começar</Button>
+    99→    99→            </motion.div>
+   100→   100→          )}
+   101→   101→          {onboardStep === 1 && (
+   102→   102→            <motion.div key="form" {...fade} className="w-full max-w-sm space-y-4">
+   103→   103→              <button onClick={() => setOnboardStep(0)} className="text-green-200 mb-4 flex items-center gap-1 text-sm"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+   104→   104→              <div className="text-center mb-6">
+   105→   105→                <h2 className="text-2xl font-bold">Seus Dados</h2>
+   106→   106→                <p className="text-green-200 text-sm mt-1">Precisamos de poucas informações</p>
+   107→   107→              </div>
+   108→   108→              <div className="space-y-3">
+   109→   109→                <div><Label className="text-green-100 text-sm">Nome</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Seu nome" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+   110→   110→                <div><Label className="text-green-100 text-sm">Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+   111→   111→                <div className="grid grid-cols-3 gap-2">
+   112→   112→                  <div><Label className="text-green-100 text-xs">Peso (kg)</Label><Input type="number" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} placeholder="70" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+   113→   113→                  <div><Label className="text-green-100 text-xs">Meta (kg)</Label><Input type="number" value={form.goalWeight} onChange={e => setForm(f => ({ ...f, goalWeight: e.target.value }))} placeholder="60" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+   114→   114→                  <div><Label className="text-green-100 text-xs">Altura (cm)</Label><Input type="number" value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value }))} placeholder="165" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+   115→   115→                </div>
+   116→   116→              </div>
+   117→   117→              <Button size="lg" className="w-full bg-white text-green-700 hover:bg-green-50 rounded-full text-lg mt-4" onClick={() => {
+   118→   118→                if (!form.name || !form.email) return;
+   119→   119→                store.completeOnboarding({ name: form.name, email: form.email, weight: parseFloat(form.weight) || 70, goalWeight: parseFloat(form.goalWeight) || 60, height: parseFloat(form.height) || 165 });
+   120→   120→              }}>Entrar</Button>
+   121→   121→            </motion.div>
+   122→   122→          )}
+   123→   123→        </AnimatePresence>
+   124→   124→      </div>
+   125→   125→    );
+   126→   126→  }
+   127→   127→
+   128→   128→  // ============== MAIN APP WITH NAV ==============
+   129→   129→  const currentNav = navItems.find(n => n.view === currentView);
+   130→   130→  const showNav = !['onboarding'].includes(currentView);
+   131→   131→
+   132→   132→  return (
+   133→   133→    <div className="min-h-screen bg-gray-50">
+   134→   134→      <div className="max-w-lg mx-auto pb-24">
+   135→   135→        <AnimatePresence mode="wait">
+   136→   136→          {currentView === 'dashboard' && <Dashboard key="dash" />}
+   137→   137→          {currentView === 'phases' && <PhasesScreen key="phases" />}
+   138→   138→          {currentView === 'phase-detail' && <PhaseDetail key="pdetail" />}
+   139→   139→          {currentView === 'nutrition' && <NutritionScreen key="nutrition" />}
+   140→   140→          {currentView === 'recipe-detail' && <RecipeDetail key="rdetail" />}
+   141→   141→          {currentView === 'juice-detail' && <JuiceDetail key="jdetail" />}
+   142→   142→          {currentView === 'mealplan' && <MealPlanScreen key="mealplan" />}
+   143→   143→          {currentView === 'workout' && <WorkoutScreen key="workout" />}
+   144→   144→          {currentView === 'achievements' && <AchievementsScreen key="ach" />}
+   145→   145→          {currentView === 'profile' && <ProfileScreen key="profile" />}
+   146→   146→        </AnimatePresence>
+   147→   147→      </div>
+   148→   148→      {showNav && (
+   149→   149→        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 pb-[env(safe-area-inset-bottom)]">
+   150→   150→          <div className="max-w-lg mx-auto flex">
+   151→   151→            {navItems.map(n => {
+   152→   152→              const active = currentNav?.view === n.view;
+   153→   153→              return <button key={n.view} onClick={() => store.setView(n.view)} className={`flex-1 flex flex-col items-center py-2 pt-3 transition-colors ${active ? 'text-green-600' : 'text-gray-400'}`}><n.icon className="w-5 h-5" /><span className="text-[10px] mt-0.5 font-medium">{n.label}</span></button>;
+   154→   154→            })}
+   155→   155→          </div>
+   156→   156→        </nav>
+   157→   157→      )}
+   158→   158→    </div>
+   159→   159→  );
+   160→   160→
+   161→   161→  // ============== DASHBOARD ==============
+   162→   162→  function Dashboard() {
+   163→   163→    return (
+   164→   164→      <motion.div {...fade} className="pt-6 px-4 space-y-5">
+   165→   165→        <div>
+   166→   166→          <h1 className="text-2xl font-bold text-gray-800">Olá, {user!.name}! 👋</h1>
+   167→   167→          <p className="text-gray-500 text-sm mt-1">Vamos continuar sua jornada hoje?</p>
+   168→   168→        </div>
+   169→   169→        <Card className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0"><CardContent className="p-4">
+   170→   170→          <p className="text-sm opacity-90 italic">&ldquo;{phrase.quote}&rdquo;</p>
+   171→   171→        </CardContent></Card>
+   172→   172→        {/* Water */}
+   173→   173→        <Card><CardContent className="p-4">
+   174→   174→          <div className="flex items-center justify-between mb-3"><div className="flex items-center gap-2"><Droplets className="w-5 h-5 text-blue-500" /><span className="font-semibold text-gray-800">Água Hoje</span></div><span className="text-sm text-gray-500">{store.waterGlasses}/{store.waterGoal} copos</span></div>
+   175→   175→          <Progress value={Math.min((store.waterGlasses / store.waterGoal) * 100, 100)} className="h-3 bg-blue-100" />
+   176→   176→          <div className="flex items-center justify-center gap-4 mt-3">
+   177→   177→            <Button variant="outline" size="icon" className="rounded-full h-10 w-10" onClick={() => store.setWaterGlasses(Math.max(0, store.waterGlasses - 1))}><Minus className="w-4 h-4" /></Button>
+   178→   178→            <span className="text-2xl font-bold text-blue-600">{store.waterGlasses}</span>
+   179→   179→            <Button variant="outline" size="icon" className="rounded-full h-10 w-10" onClick={() => store.setWaterGlasses(Math.min(store.waterGlasses + 1, store.waterGoal + 5))}><Plus className="w-4 h-4" /></Button>
+   180→   180→          </div>
+   181→   181→        </CardContent></Card>
+   182→   182→        {/* Progress */}
+   183→   183→        <Card><CardContent className="p-4">
+   184→   184→          <div className="flex items-center justify-between mb-2"><span className="font-semibold text-gray-800">Seu Progresso</span><span className="text-sm bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Nível {level}</span></div>
+   185→   185→          <Progress value={progressPct} className="h-2.5 mb-1" /><p className="text-xs text-gray-500">{completedCount} de {totalL} lições concluídas</p>
+   186→   186→        </CardContent></Card>
+   187→   187→        {/* Quick Access */}
+   188→   188→        <div className="grid grid-cols-2 gap-3">
+   189→   189→          {[
+   190→   190→            { emoji: '📖', label: 'Jornada', desc: 'Fases e lições', view: 'phases' as const },
+   191→   191→            { emoji: '🥗', label: 'Nutrição', desc: 'Receitas e sucos', view: 'nutrition' as const },
+   192→   192→            { emoji: '📋', label: 'Plano Alimentar', desc: 'Menu 1500kcal', view: 'mealplan' as const },
+   193→   193→            { emoji: '🏋️', label: 'Treino', desc: 'Ficha semanal', view: 'workout' as const },
+   194→   194→          ].map(item => (
+   195→   195→            <button key={item.view} onClick={() => store.setView(item.view)} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left hover:shadow-md transition-shadow active:scale-95">
+   196→   196→              <span className="text-2xl">{item.emoji}</span>
+   197→   197→              <p className="font-semibold text-gray-800 mt-2 text-sm">{item.label}</p>
+   198→   198→              <p className="text-xs text-gray-500">{item.desc}</p>
+   199→   199→            </button>
+   200→   200→          ))}
+   201→   201→        </div>
+   202→   202→      </motion.div>
+   203→   203→    );
+   204→   204→  }
+   205→   205→
+   206→   206→  // ============== PHASES ==============
+   207→   207→  function PhasesScreen() {
+   208→   208→    return (
+   209→   209→      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   210→   210→        <h1 className="text-2xl font-bold text-gray-800">Sua Jornada 📖</h1>
+   211→   211→        {phases.map(phase => {
+   212→   212→          const done = store.getPhaseCompletedCount(phase.id);
+   213→   213→          const total = phase.lessons.length;
+   214→   214→          const pct = total > 0 ? (done / total) * 100 : 0;
+   215→   215→          return (
+   216→   216→            <Card key={phase.id} className="overflow-hidden"><button onClick={() => store.selectPhase(phase.id)} className="w-full text-left">
+   217→   217→              <div className={`h-2 bg-gradient-to-r ${phase.color}`} />
+   218→   218→              <CardContent className="p-4">
+   219→   219→                <div className="flex items-start gap-3">
+   220→   220→                  <span className="text-3xl">{phase.emoji}</span>
+   221→   221→                  <div className="flex-1 min-w-0">
+   222→   222→                    <h3 className="font-bold text-gray-800">{phase.title}</h3>
+   223→   223→                    <p className="text-sm text-gray-500 mt-0.5">{phase.description}</p>
+   224→   224→                    <div className="flex items-center gap-2 mt-3">
+   225→   225→                      <Progress value={pct} className="h-2 flex-1" />
+   226→   226→                      <span className="text-xs text-gray-500 whitespace-nowrap">{done}/{total}</span>
+   227→   227→                    </div>
+   228→   228→                  </div>
+   229→   229→                  <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
+   230→   230→                </div>
+   231→   231→              </CardContent>
+   232→   232→            </button></Card>
+   233→   233→          );
+   234→   234→        })}
+   235→   235→      </motion.div>
+   236→   236→    );
+   237→   237→  }
+   238→   238→
+   239→   239→  // ============== PHASE DETAIL ==============
+   240→   240→  function PhaseDetail() {
+   241→   241→    const phase = phases.find(p => p.id === store.selectedPhase);
+   242→   242→    if (!phase) return null;
+   243→   243→    if (activeLesson !== null) {
+   244→   244→      const lesson = phase.lessons.find(l => l.id === activeLesson);
+   245→   245→      if (!lesson) return null;
+   246→   246→      const completed = store.isLessonCompleted(phase.id, lesson.id);
+   247→   247→      return (
+   248→   248→        <motion.div {...fade} className="pt-4 px-4 space-y-4">
+   249→   249→          <button onClick={() => setActiveLesson(null)} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+   250→   250→          <h2 className="text-xl font-bold text-gray-800">{lesson.title}</h2>
+   251→   251→          <div className="bg-white rounded-2xl p-4 shadow-sm prose prose-sm max-w-none"><ReactMarkdown>{lesson.content}</ReactMarkdown></div>
+   252→   252→          {lesson.exercises.length > 0 && (
+   253→   253→            <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+   254→   254→              <h3 className="font-bold text-gray-800">✏️ Exercícios</h3>
+   255→   255→              {lesson.exercises.map((ex, i) => (
+   256→   256→                <div key={i}>
+   257→   257→                  <Label className="text-sm text-gray-700">{ex.question}</Label>
+   258→   258→                  <Textarea value={exerciseAnswers[`${lesson.id}-${i}`] || ''} onChange={e => setExerciseAnswers(p => ({ ...p, [`${lesson.id}-${i}`]: e.target.value }))} placeholder={ex.placeholder} className="mt-1" rows={2} />
+   259→   259→                </div>
+   260→   260→              ))}
+   261→   261→            </div>
+   262→   262→          )}
+   263→   263→          {!completed && (
+   264→   264→            <Button className="w-full bg-green-600 hover:bg-green-700 rounded-full" size="lg" onClick={() => { store.completeLesson(phase.id, lesson.id); setActiveLesson(null); }}>
+   265→   265→              <Check className="w-4 h-4 mr-2" /> Marcar como Concluída
+   266→   266→            </Button>
+   267→   267→          )}
+   268→   268→          {completed && <div className="text-center py-3 text-green-600 font-medium">✅ Lição concluída!</div>}
+   269→   269→        </motion.div>
+   270→   270→      );
+   271→   271→    }
+   272→   272→    return (
+   273→   273→      <motion.div {...fade} className="pt-4 px-4 space-y-4">
+   274→   274→        <button onClick={() => store.setView('phases')} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+   275→   275→        <div className={`bg-gradient-to-r ${phase.color} rounded-2xl p-5 text-white`}>
+   276→   276→          <span className="text-4xl">{phase.emoji}</span>
+   277→   277→          <h2 className="text-xl font-bold mt-2">{phase.title}</h2>
+   278→   278→          <p className="text-white/80 text-sm mt-1">{phase.description}</p>
+   279→   279→        </div>
+   280→   280→        <div className="space-y-2">
+   281→   281→          {phase.lessons.map((lesson, i) => {
+   282→   282→            const done = store.isLessonCompleted(phase.id, lesson.id);
+   283→   283→            return (
+   284→   284→              <button key={lesson.id} onClick={() => { setActiveLesson(lesson.id); setExerciseAnswers({}); }} className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md transition-shadow">
+   285→   285→                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600'}`}>{done ? <Check className="w-4 h-4" /> : i + 1}</div>
+   286→   286→                <div className="flex-1 min-w-0"><p className={`font-medium text-sm ${done ? 'text-green-600' : 'text-gray-800'}`}>{lesson.title}</p><p className="text-xs text-gray-400">{done ? 'Concluída ✓' : `XP: ${lesson.xp}pts`}</p></div>
+   287→   287→              </button>
+   288→   288→            );
+   289→   289→          })}
+   290→   290→        </div>
+   291→   291→      </motion.div>
+   292→   292→    );
+   293→   293→  }
+   294→   294→
+   295→   295→  // ============== NUTRITION ==============
+   296→   296→  function NutritionScreen() {
+   297→   297→    const cats = ['all', ...Object.keys(categoryLabels)];
+   298→   298→    const filtered = recipeFilter === 'all' ? recipes : recipes.filter(r => r.category === recipeFilter);
+   299→   299→    const searched = searchQuery ? filtered.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())) : filtered;
+   300→   300→    const filteredJuices = searchQuery ? juices.filter(j => j.name.toLowerCase().includes(searchQuery.toLowerCase())) : juices;
+   301→   301→    return (
+   302→   302→      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   303→   303→        <h1 className="text-2xl font-bold text-gray-800">Nutrição 🥗</h1>
+   304→   304→        <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar receitas ou sucos..." className="pl-9" /></div>
+   305→   305→        <div className="flex gap-2 bg-white rounded-xl p-1 shadow-sm">
+   306→   306→          <button onClick={() => setNutritionTab('recipes')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${nutritionTab === 'recipes' ? 'bg-green-500 text-white' : 'text-gray-600'}`}>🍽️ Receitas</button>
+   307→   307→          <button onClick={() => setNutritionTab('juices')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${nutritionTab === 'juices' ? 'bg-green-500 text-white' : 'text-gray-600'}`}>🧃 Sucos</button>
+   308→   308→        </div>
+   309→   309→        {nutritionTab === 'recipes' && <>
+   310→   310→          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">{cats.map(c => <button key={c} onClick={() => setRecipeFilter(c)} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${recipeFilter === c ? 'bg-green-600 text-white' : 'bg-white text-gray-600 shadow-sm'}`}>{c === 'all' ? 'Todas' : categoryLabels[c as keyof typeof categoryLabels]}</button>)}</div>
+   311→   311→          <div className="space-y-3">{searched.map(r => <RecipeCard key={r.id} recipe={r} />)}</div>
+   312→   312→        </>}
+   313→   313→        {nutritionTab === 'juices' && <div className="space-y-3">{filteredJuices.map(j => <JuiceCard key={j.id} juice={j} />)}</div>}
+   314→   314→      </motion.div>
+   315→   315→    );
+   316→   316→  }
+   317→   317→
+   318→   318→  function RecipeCard({ recipe }: { recipe: Recipe }) {
+   319→   319→    return (
+   320→   320→      <Card className="overflow-hidden"><button onClick={() => store.selectRecipe(recipe.id)} className="w-full text-left">
+   321→   321→        <CardContent className="p-3 flex items-center gap-3">
+   322→   322→          <span className="text-2xl">{recipe.emoji}</span>
+   323→   323→          <div className="flex-1 min-w-0">
+   324→   324→            <p className="font-medium text-sm text-gray-800 truncate">{recipe.name}</p>
+   325→   325→            <p className="text-xs text-gray-500">{recipe.calories}kcal · {recipe.prepTime}min</p>
+   326→   326→          </div>
+   327→   327→          <button onClick={e => { e.stopPropagation(); store.toggleFavorite(recipe.id); }} className="p-1"><Heart className={`w-5 h-5 ${store.isFavorite(recipe.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button>
+   328→   328→        </CardContent>
+   329→   329→      </button></Card>
+   330→   330→    );
+   331→   331→  }
+   332→   332→
+   333→   333→  function JuiceCard({ juice }: { juice: Juice }) {
+   334→   334→    return (
+   335→   335→      <Card className="overflow-hidden"><button onClick={() => store.selectJuice(juice.id)} className="w-full text-left">
+   336→   336→        <CardContent className="p-3 flex items-center gap-3">
+   337→   337→          <span className="text-2xl">🧃</span>
+   338→   338→          <div className="flex-1 min-w-0">
+   339→   339→            <p className="font-medium text-sm text-gray-800 truncate">{juice.name}</p>
+   340→   340→            <p className="text-xs text-gray-500">{juice.prepTime}min · {juice.benefits.length} benefícios</p>
+   341→   341→          </div>
+   342→   342→          <button onClick={e => { e.stopPropagation(); store.toggleFavorite(juice.id); }} className="p-1"><Heart className={`w-5 h-5 ${store.isFavorite(juice.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button>
+   343→   343→        </CardContent>
+   344→   344→      </button></Card>
+   345→   345→    );
+   346→   346→  }
+   347→   347→
+   348→   348→  // ============== RECIPE DETAIL ==============
+   349→   349→  function RecipeDetail() {
+   350→   350→    const r = recipes.find(x => x.id === store.selectedRecipeId);
+   351→   351→    if (!r) return null;
+   352→   352→    return (
+   353→   353→      <motion.div {...fade} className="pt-4 px-4 space-y-4">
+   354→   354→        <button onClick={() => store.setView('nutrition')} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+   355→   355→        <div className="flex items-start justify-between"><h2 className="text-xl font-bold text-gray-800 flex-1">{r.emoji} {r.name}</h2><button onClick={() => store.toggleFavorite(r.id)}><Heart className={`w-6 h-6 ${store.isFavorite(r.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button></div>
+   356→   356→        {r.description && <p className="text-gray-600 text-sm">{r.description}</p>}
+   357→   357→        <div className="flex gap-3 flex-wrap">
+   358→   358→          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium">🔥 {r.calories}kcal</span>
+   359→   359→          {r.protein && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">🥩 {r.protein}g prot</span>}
+   360→   360→          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">⏱️ {r.prepTime}min</span>
+   361→   361→          <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">👥 {r.servings} porções</span>
+   362→   362→        </div>
+   363→   363→        <Card><CardContent className="p-4 space-y-2">
+   364→   364→          <h3 className="font-bold text-gray-800">🥘 Ingredientes</h3>
+   365→   365→          {r.ingredients.map((ing, i) => <p key={i} className="text-sm text-gray-700">• {ing}</p>)}
+   366→   366→        </CardContent></Card>
+   367→   367→        <Card><CardContent className="p-4 space-y-2">
+   368→   368→          <h3 className="font-bold text-gray-800">👨‍🍳 Modo de Preparo</h3>
+   369→   369→          {r.instructions.map((step, i) => <p key={i} className="text-sm text-gray-700"><span className="font-medium text-green-600">{i + 1}.</span> {step}</p>)}
+   370→   370→        </CardContent></Card>
+   371→   371→        {r.tips && <Card className="bg-amber-50 border-amber-200"><CardContent className="p-4"><p className="text-sm text-amber-800">💡 <strong>Dica:</strong> {r.tips}</p></CardContent></Card>}
+   372→   372→      </motion.div>
+   373→   373→    );
+   374→   374→  }
+   375→   375→
+   376→   376→  // ============== JUICE DETAIL ==============
+   377→   377→  function JuiceDetail() {
+   378→   378→    const j = juices.find(x => x.id === store.selectedJuiceId);
+   379→   379→    if (!j) return null;
+   380→   380→    return (
+   381→   381→      <motion.div {...fade} className="pt-4 px-4 space-y-4">
+   382→   382→        <button onClick={() => store.setView('nutrition')} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+   383→   383→        <div className="flex items-start justify-between"><h2 className="text-xl font-bold text-gray-800 flex-1">🧃 {j.name}</h2><button onClick={() => store.toggleFavorite(j.id)}><Heart className={`w-6 h-6 ${store.isFavorite(j.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button></div>
+   384→   384→        <p className="text-gray-600 text-sm">{j.description}</p>
+   385→   385→        <Card><CardContent className="p-4 space-y-2">
+   386→   386→          <h3 className="font-bold text-gray-800">✨ Benefícios</h3>
+   387→   387→          {j.benefits.map((b, i) => <p key={i} className="text-sm text-gray-700">• {b}</p>)}
+   388→   388→        </CardContent></Card>
+   389→   389→        <Card><CardContent className="p-4 space-y-2">
+   390→   390→          <h3 className="font-bold text-gray-800">🥘 Ingredientes</h3>
+   391→   391→          {j.ingredients.map((ing, i) => <p key={i} className="text-sm text-gray-700">• {ing}</p>)}
+   392→   392→        </CardContent></Card>
+   393→   393→        <Card><CardContent className="p-4 space-y-2">
+   394→   394→          <h3 className="font-bold text-gray-800">👨‍🍳 Preparo</h3>
+   395→   395→          {j.instructions.map((step, i) => <p key={i} className="text-sm text-gray-700"><span className="font-medium text-green-600">{i + 1}.</span> {step}</p>)}
+   396→   396→        </CardContent></Card>
+   397→   397→      </motion.div>
+   398→   398→    );
+   399→   399→  }
+   400→   400→
+   401→   401→  // ============== MEAL PLAN ==============
+   402→   402→  function MealPlanScreen() {
+   403→   403→    const meal = mealPlan[selectedMealTab];
+   404→   404→    return (
+   405→   405→      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   406→   406→        <div><h1 className="text-2xl font-bold text-gray-800">Plano Alimentar 📋</h1><p className="text-gray-500 text-sm mt-1">Nutricionista: Natalia Cavalcante | CRN 17639</p></div>
+   407→   407→        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+   408→   408→          {mealPlan.map((m, i) => <button key={m.key} onClick={() => setSelectedMealTab(i)} className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedMealTab === i ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{m.emoji} {m.label}</button>)}
+   409→   409→        </div>
+   410→   410→        <div className="text-center text-sm text-gray-500">Total: <span className="font-bold text-green-600">{mealPlan.reduce((a, m) => a + m.calories, 0)} kcal</span></div>
+   411→   411→        {meal && <>
+   412→   412→          <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+   413→   413→            <div className="flex items-center justify-between"><h3 className="font-bold text-gray-800">{meal.emoji} {meal.label}</h3><span className="text-sm text-green-600 font-medium">{meal.calories} kcal</span></div>
+   414→   414→            {meal.options.map((opt, oi) => <div key={oi}>{meal.options.length > 1 && <p className="text-xs font-medium text-gray-500 mb-2">{opt.label}</p>}
+   415→   415→              {opt.items.map((item, ii) => <div key={ii} className="flex justify-between py-1.5 border-b border-gray-50 last:border-0"><span className="text-sm text-gray-700">{item.name}</span><span className="text-xs text-gray-400">{item.amount}</span></div>)}</div>)}
+   416→   416→          </div>
+   417→   417→          {meal.substitutions.length > 0 && <Card><CardContent className="p-4">
+   418→   418→            <button onClick={() => setExpandedSubs(p => ({ ...p, [meal.key]: !p[meal.key] }))} className="w-full flex items-center justify-between"><h4 className="font-bold text-gray-800 text-sm">🔄 Substituições</h4><ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubs[meal.key] ? 'rotate-90' : ''}`} /></button>
+   419→   419→            {expandedSubs[meal.key] && <div className="mt-3 space-y-3">{meal.substitutions.map((s, i) => <div key={i}><p className="text-sm font-medium text-gray-700">{s.original} →</p><p className="text-xs text-gray-500 mt-0.5 ml-2">{s.alternatives.join(' | ')}</p></div>)}</div>}
+   420→   420→          </CardContent></Card>}
+   421→   421→        </>}
+   422→   422→        <Card><CardContent className="p-4 space-y-3">
+   423→   423→          <h3 className="font-bold text-gray-800">⚠️ Orientações</h3>
+   424→   424→          {nutritionalGuidelines.map((g, i) => <div key={i} className="flex gap-3 items-start"><span className="text-lg">{g.icon}</span><div><p className="text-sm font-medium text-gray-800">{g.title}</p><p className="text-xs text-gray-500">{g.desc}</p></div></div>)}
+   425→   425→        </CardContent></Card>
+   426→   426→      </motion.div>
+   427→   427→    );
+   428→   428→  }
+   429→   429→
+   430→   430→  // ============== WORKOUT ==============
+   431→   431→  function WorkoutScreen() {
+   432→   432→    const day = workoutPlan[selectedWorkoutDay];
+   433→   433→    return (
+   434→   434→      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   435→   435→        <h1 className="text-2xl font-bold text-gray-800">Ficha de Treino 🏋️</h1>
+   436→   436→        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+   437→   437→          {workoutPlan.map((d, i) => <button key={d.key} onClick={() => setSelectedWorkoutDay(i)} className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedWorkoutDay === i ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{d.emoji} {d.label}</button>)}
+   438→   438→        </div>
+   439→   439→        {day && <>
+   440→   440→          <div className={`bg-gradient-to-r ${day.color} rounded-2xl p-5 text-white`}><span className="text-3xl">{day.emoji}</span><h2 className="text-xl font-bold mt-2">{day.label} - {day.muscle}</h2></div>
+   441→   441→          <div className="space-y-2">
+   442→   442→            {day.exercises.map((ex, i) => {
+   443→   443→              const key = `${day.key}-${i}`;
+   444→   444→              const done = workoutChecks[key] || false;
+   445→   445→              return (
+   446→   446→                <button key={i} onClick={() => toggleWorkoutCheck(key)} className={`w-full bg-white rounded-xl p-4 shadow-sm border flex items-center gap-3 text-left transition-all ${done ? 'border-green-300 bg-green-50' : 'border-gray-100'}`}>
+   447→   447→                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 ${done ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300'}`}>{done && <Check className="w-4 h-4" />}</div>
+   448→   448→                  <div className="flex-1"><p className={`font-medium text-sm ${done ? 'text-green-600 line-through' : 'text-gray-800'}`}>{ex.name}</p><p className="text-xs text-gray-400">{ex.sets} · Descanso: {ex.rest}</p></div>
+   449→   449→                </button>
+   450→   450→              );
+   451→   451→            })}
+   452→   452→          </div>
+   453→   453→        </>}
+   454→   454→      </motion.div>
+   455→   455→    );
+   456→   456→  }
+   457→   457→
+   458→   458→  // ============== ACHIEVEMENTS ==============
+   459→   459→  function AchievementsScreen() {
+   460→   460→    return (
+   461→   461→      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   462→   462→        <h1 className="text-2xl font-bold text-gray-800">Conquistas 🏆</h1>
+   463→   463→        <div className="grid grid-cols-3 gap-3">
+   464→   464→          {achievements.map((a, i) => {
+   465→   465→            const unlocked = isUnlocked(a);
+   466→   466→            return (
+   467→   467→              <div key={i} className={`rounded-2xl p-3 text-center transition-all ${unlocked ? 'bg-green-50 border-2 border-green-300 shadow-md' : 'bg-white border border-gray-100 shadow-sm opacity-60'}`}>
+   468→   468→                <span className="text-3xl">{a.emoji}</span>
+   469→   469→                <p className="text-xs font-bold mt-2 text-gray-800 leading-tight">{a.name}</p>
+   470→   470→                <p className="text-[10px] text-gray-500 mt-1 leading-tight">{a.desc}</p>
+   471→   471→                {unlocked && <p className="text-[10px] text-green-600 font-medium mt-1">✅ Desbloqueada</p>}
+   472→   472→              </div>
+   473→   473→            );
+   474→   474→          })}
+   475→   475→        </div>
+   476→   476→      </motion.div>
+   477→   477→    );
+   478→   478→  }
+   479→   479→
+   480→   480→  // ============== PROFILE ==============
+   481→   481→  function ProfileScreen() {
+   482→   482→    if (editing) {
+   483→   483→      return (
+   484→   484→        <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   485→   485→          <button onClick={() => { setEditing(false); }} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Cancelar</button>
+   486→   486→          <h2 className="text-xl font-bold text-gray-800">Editar Perfil</h2>
+   487→   487→          <Card><CardContent className="p-4 space-y-3">
+   488→   488→            <div><Label className="text-sm">Peso Atual (kg)</Label><Input type="number" value={editForm.weight} onChange={e => setEditForm(f => ({ ...f, weight: e.target.value }))} className="mt-1" /></div>
+   489→   489→            <div><Label className="text-sm">Peso Objetivo (kg)</Label><Input type="number" value={editForm.goalWeight} onChange={e => setEditForm(f => ({ ...f, goalWeight: e.target.value }))} className="mt-1" /></div>
+   490→   490→            <div><Label className="text-sm">Altura (cm)</Label><Input type="number" value={editForm.height} onChange={e => setEditForm(f => ({ ...f, height: e.target.value }))} className="mt-1" /></div>
+   491→   491→          </CardContent></Card>
+   492→   492→          <Button className="w-full bg-green-600 hover:bg-green-700 rounded-full" onClick={() => { store.updateProfile({ weight: parseFloat(editForm.weight), goalWeight: parseFloat(editForm.goalWeight), height: parseFloat(editForm.height) }); setEditing(false); }}>Salvar</Button>
+   493→   493→        </motion.div>
+   494→   494→      );
+   495→   495→    }
+   496→   496→    return (
+   497→   497→      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+   498→   498→        <h1 className="text-2xl font-bold text-gray-800">Meu Perfil 👤</h1>
+   499→   499→        <Card><CardContent className="p-4">
+   500→   500→          <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold">{user!.name.charAt(0).toUpperCase()}</div><div><p className="font-bold text-gray-800">{user!.name}</p><p className="text-sm text-gray-500">{user!.email}</p></div></div><Button variant="ghost" size="icon" onClick={() => setEditing(true)}><Edit3 className="w-4 h-4" /></Button></div>
+   501→   501→          <div className="grid grid-cols-3 gap-3">
+   502→   502→            <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-lg font-bold text-gray-800">{user!.weight}</p><p className="text-xs text-gray-500">Peso (kg)</p></div>
+   503→   503→            <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-lg font-bold text-green-600">{user!.goalWeight}</p><p className="text-xs text-gray-500">Meta (kg)</p></div>
+   504→   504→            <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-lg font-bold text-gray-800">Nv.{level}</p><p className="text-xs text-gray-500">Nível</p></div>
+   505→   505→          </div>
+   506→   506→        </CardContent></Card>
+   507→   507→        <Card><CardContent className="p-4 space-y-3">
+   508→   508→          <h3 className="font-bold text-gray-800">📊 Progresso</h3>
+   509→   509→          <Progress value={progressPct} className="h-3" />
+   510→   510→          <p className="text-sm text-gray-600">{completedCount} de {totalL} lições ({Math.round(progressPct)}%)</p>
+   511→   511→          <div className="space-y-2 mt-3">{phases.map(p => { const done = store.getPhaseCompletedCount(p.id); const total = p.lessons.length; return <div key={p.id} className="flex items-center gap-2"><span className="text-sm">{p.emoji}</span><p className="text-xs text-gray-600 flex-1">{p.title}</p><p className="text-xs text-gray-500">{done}/{total}</p></div>; })}</div>
+   512→   512→        </CardContent></Card>
+   513→   513→        <Button variant="outline" className="w-full text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Deseja sair? Seus dados serão apagados.')) store.logout(); }}><LogOut className="w-4 h-4 mr-2" /> Sair</Button>
+   514→   514→      </motion.div>
+   515→   515→    );
+   516→   516→  }
+   517→   517→}
+   518→   518→

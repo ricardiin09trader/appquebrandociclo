@@ -1,0 +1,517 @@
+'use client';
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import {
+  Home, BookOpen, UtensilsCrossed, Trophy, User, ChevronLeft, ChevronRight,
+  Heart, Plus, Minus, Check, Droplets, Clock, Search, X, Star, Dumbbell, Edit3, LogOut, Menu
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useAppStore } from '@/store/useAppStore';
+import { phases, getTotalLessons } from '@/data/phases';
+import { getRandomPhrase } from '@/data/phrases';
+import { mealPlan, nutritionalGuidelines } from '@/data/mealplan';
+import { workoutPlan } from '@/data/workout';
+import { achievements } from '@/data/achievements';
+import { recipes, categoryLabels } from '@/data/recipes';
+import { juices } from '@/data/juices';
+import type { Recipe } from '@/data/recipes';
+import type { Juice } from '@/data/juices';
+
+const fade = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 } };
+const navItems = [
+  { view: 'dashboard' as const, icon: Home, label: 'Início' },
+  { view: 'phases' as const, icon: BookOpen, label: 'Jornada' },
+  { view: 'nutrition' as const, icon: UtensilsCrossed, label: 'Nutrição' },
+  { view: 'achievements' as const, icon: Trophy, label: 'Conquistas' },
+  { view: 'profile' as const, icon: User, label: 'Perfil' },
+];
+
+export default function App() {
+  const store = useAppStore();
+  const { user, currentView } = store;
+  const [phrase] = useState(() => getRandomPhrase());
+  const [activeLesson, setActiveLesson] = useState<number | null>(null);
+  const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMealTab, setSelectedMealTab] = useState(0);
+  const [selectedWorkoutDay, setSelectedWorkoutDay] = useState(0);
+  const [workoutChecks, setWorkoutChecks] = useState<Record<string, boolean>>({});
+  const [onboardStep, setOnboardStep] = useState(0);
+  const [form, setForm] = useState({ name: '', email: '', weight: '', goalWeight: '', height: '' });
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ weight: '', goalWeight: '', height: '' });
+  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+  const [showGuide, setShowGuide] = useState(false);
+  const [nutritionTab, setNutritionTab] = useState<'recipes' | 'juices'>('recipes');
+  const [recipeFilter, setRecipeFilter] = useState<string>('all');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('qc-workout');
+    if (saved) setWorkoutChecks(JSON.parse(saved));
+  }, []);
+  useEffect(() => { localStorage.setItem('qc-workout', JSON.stringify(workoutChecks)); }, [workoutChecks]);
+  useEffect(() => { if (user) setEditForm({ weight: String(user.weight), goalWeight: String(user.goalWeight), height: String(user.height) }); }, [user]);
+  useEffect(() => { setActiveLesson(null); setExerciseAnswers({}); setRecipeFilter('all'); setSearchQuery(''); }, [currentView]);
+
+  const completedCount = store.getCompletedCount();
+  const totalL = getTotalLessons();
+  const level = Math.floor(completedCount / 2) + 1;
+  const progressPct = totalL > 0 ? (completedCount / totalL) * 100 : 0;
+
+  const toggleWorkoutCheck = (key: string) => setWorkoutChecks(p => ({ ...p, [key]: !p[key] }));
+
+  const isUnlocked = useCallback((a: typeof achievements[0]) => {
+    const cc = completedCount;
+    const isPhaseComplete = (pid: number) => phases.find(p => p.id === pid)?.lessons.every(l => store.isLessonCompleted(pid, l.id)) ?? false;
+    switch (a.requirement) {
+      case '1 lição': return cc >= 1;
+      case '5 lições': return cc >= 5;
+      case 'Fase 1': return isPhaseComplete(1);
+      case 'Fase 2': return isPhaseComplete(2);
+      case 'Fase 3': return isPhaseComplete(3);
+      case 'Fase 4': return isPhaseComplete(4);
+      case '5 favoritos': return store.favorites.length >= 5;
+      case '100%': return cc === totalL;
+      case '50%': return cc >= Math.floor(totalL / 2);
+      default: return false;
+    }
+  }, [completedCount, store, totalL]);
+
+  // ============== ONBOARDING ==============
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-500 to-green-700 flex flex-col items-center justify-center p-6 text-white">
+        <AnimatePresence mode="wait">
+          {onboardStep === 0 && (
+            <motion.div key="welcome" {...fade} className="text-center max-w-sm">
+              <div className="text-7xl mb-6">🌱</div>
+              <h1 className="text-3xl font-bold mb-3">Quebrando Ciclo</h1>
+              <p className="text-green-100 text-lg mb-2">Sua jornada de transformação começa aqui</p>
+              <p className="text-green-200 text-sm mb-8">Vamos quebrar os ciclos de maus hábitos alimentares e construir uma relação saudável com a comida.</p>
+              <Button size="lg" className="bg-white text-green-700 hover:bg-green-50 rounded-full px-8 text-lg" onClick={() => setOnboardStep(1)}>Começar</Button>
+            </motion.div>
+          )}
+          {onboardStep === 1 && (
+            <motion.div key="form" {...fade} className="w-full max-w-sm space-y-4">
+              <button onClick={() => setOnboardStep(0)} className="text-green-200 mb-4 flex items-center gap-1 text-sm"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold">Seus Dados</h2>
+                <p className="text-green-200 text-sm mt-1">Precisamos de poucas informações</p>
+              </div>
+              <div className="space-y-3">
+                <div><Label className="text-green-100 text-sm">Nome</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Seu nome" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+                <div><Label className="text-green-100 text-sm">Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div><Label className="text-green-100 text-xs">Peso (kg)</Label><Input type="number" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} placeholder="70" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+                  <div><Label className="text-green-100 text-xs">Meta (kg)</Label><Input type="number" value={form.goalWeight} onChange={e => setForm(f => ({ ...f, goalWeight: e.target.value }))} placeholder="60" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+                  <div><Label className="text-green-100 text-xs">Altura (cm)</Label><Input type="number" value={form.height} onChange={e => setForm(f => ({ ...f, height: e.target.value }))} placeholder="165" className="bg-white/20 border-white/30 text-white placeholder:text-green-200" /></div>
+                </div>
+              </div>
+              <Button size="lg" className="w-full bg-white text-green-700 hover:bg-green-50 rounded-full text-lg mt-4" onClick={() => {
+                if (!form.name || !form.email) return;
+                store.completeOnboarding({ name: form.name, email: form.email, weight: parseFloat(form.weight) || 70, goalWeight: parseFloat(form.goalWeight) || 60, height: parseFloat(form.height) || 165 });
+              }}>Entrar</Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // ============== MAIN APP WITH NAV ==============
+  const currentNav = navItems.find(n => n.view === currentView);
+  const showNav = !['onboarding'].includes(currentView);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-lg mx-auto pb-24">
+        <AnimatePresence mode="wait">
+          {currentView === 'dashboard' && <Dashboard key="dash" />}
+          {currentView === 'phases' && <PhasesScreen key="phases" />}
+          {currentView === 'phase-detail' && <PhaseDetail key="pdetail" />}
+          {currentView === 'nutrition' && <NutritionScreen key="nutrition" />}
+          {currentView === 'recipe-detail' && <RecipeDetail key="rdetail" />}
+          {currentView === 'juice-detail' && <JuiceDetail key="jdetail" />}
+          {currentView === 'mealplan' && <MealPlanScreen key="mealplan" />}
+          {currentView === 'workout' && <WorkoutScreen key="workout" />}
+          {currentView === 'achievements' && <AchievementsScreen key="ach" />}
+          {currentView === 'profile' && <ProfileScreen key="profile" />}
+        </AnimatePresence>
+      </div>
+      {showNav && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 pb-[env(safe-area-inset-bottom)]">
+          <div className="max-w-lg mx-auto flex">
+            {navItems.map(n => {
+              const active = currentNav?.view === n.view;
+              return <button key={n.view} onClick={() => store.setView(n.view)} className={`flex-1 flex flex-col items-center py-2 pt-3 transition-colors ${active ? 'text-green-600' : 'text-gray-400'}`}><n.icon className="w-5 h-5" /><span className="text-[10px] mt-0.5 font-medium">{n.label}</span></button>;
+            })}
+          </div>
+        </nav>
+      )}
+    </div>
+  );
+
+  // ============== DASHBOARD ==============
+  function Dashboard() {
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Olá, {user!.name}! 👋</h1>
+          <p className="text-gray-500 text-sm mt-1">Vamos continuar sua jornada hoje?</p>
+        </div>
+        <Card className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0"><CardContent className="p-4">
+          <p className="text-sm opacity-90 italic">&ldquo;{phrase.quote}&rdquo;</p>
+        </CardContent></Card>
+        {/* Water */}
+        <Card><CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3"><div className="flex items-center gap-2"><Droplets className="w-5 h-5 text-blue-500" /><span className="font-semibold text-gray-800">Água Hoje</span></div><span className="text-sm text-gray-500">{store.waterGlasses}/{store.waterGoal} copos</span></div>
+          <Progress value={Math.min((store.waterGlasses / store.waterGoal) * 100, 100)} className="h-3 bg-blue-100" />
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <Button variant="outline" size="icon" className="rounded-full h-10 w-10" onClick={() => store.setWaterGlasses(Math.max(0, store.waterGlasses - 1))}><Minus className="w-4 h-4" /></Button>
+            <span className="text-2xl font-bold text-blue-600">{store.waterGlasses}</span>
+            <Button variant="outline" size="icon" className="rounded-full h-10 w-10" onClick={() => store.setWaterGlasses(Math.min(store.waterGlasses + 1, store.waterGoal + 5))}><Plus className="w-4 h-4" /></Button>
+          </div>
+        </CardContent></Card>
+        {/* Progress */}
+        <Card><CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2"><span className="font-semibold text-gray-800">Seu Progresso</span><span className="text-sm bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Nível {level}</span></div>
+          <Progress value={progressPct} className="h-2.5 mb-1" /><p className="text-xs text-gray-500">{completedCount} de {totalL} lições concluídas</p>
+        </CardContent></Card>
+        {/* Quick Access */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { emoji: '📖', label: 'Jornada', desc: 'Fases e lições', view: 'phases' as const },
+            { emoji: '🥗', label: 'Nutrição', desc: 'Receitas e sucos', view: 'nutrition' as const },
+            { emoji: '📋', label: 'Plano Alimentar', desc: 'Menu 1500kcal', view: 'mealplan' as const },
+            { emoji: '🏋️', label: 'Treino', desc: 'Ficha semanal', view: 'workout' as const },
+          ].map(item => (
+            <button key={item.view} onClick={() => store.setView(item.view)} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left hover:shadow-md transition-shadow active:scale-95">
+              <span className="text-2xl">{item.emoji}</span>
+              <p className="font-semibold text-gray-800 mt-2 text-sm">{item.label}</p>
+              <p className="text-xs text-gray-500">{item.desc}</p>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ============== PHASES ==============
+  function PhasesScreen() {
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-800">Sua Jornada 📖</h1>
+        {phases.map(phase => {
+          const done = store.getPhaseCompletedCount(phase.id);
+          const total = phase.lessons.length;
+          const pct = total > 0 ? (done / total) * 100 : 0;
+          return (
+            <Card key={phase.id} className="overflow-hidden"><button onClick={() => store.selectPhase(phase.id)} className="w-full text-left">
+              <div className={`h-2 bg-gradient-to-r ${phase.color}`} />
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">{phase.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-800">{phase.title}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">{phase.description}</p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Progress value={pct} className="h-2 flex-1" />
+                      <span className="text-xs text-gray-500 whitespace-nowrap">{done}/{total}</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
+                </div>
+              </CardContent>
+            </button></Card>
+          );
+        })}
+      </motion.div>
+    );
+  }
+
+  // ============== PHASE DETAIL ==============
+  function PhaseDetail() {
+    const phase = phases.find(p => p.id === store.selectedPhase);
+    if (!phase) return null;
+    if (activeLesson !== null) {
+      const lesson = phase.lessons.find(l => l.id === activeLesson);
+      if (!lesson) return null;
+      const completed = store.isLessonCompleted(phase.id, lesson.id);
+      return (
+        <motion.div {...fade} className="pt-4 px-4 space-y-4">
+          <button onClick={() => setActiveLesson(null)} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+          <h2 className="text-xl font-bold text-gray-800">{lesson.title}</h2>
+          <div className="bg-white rounded-2xl p-4 shadow-sm prose prose-sm max-w-none"><ReactMarkdown>{lesson.content}</ReactMarkdown></div>
+          {lesson.exercises.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+              <h3 className="font-bold text-gray-800">✏️ Exercícios</h3>
+              {lesson.exercises.map((ex, i) => (
+                <div key={i}>
+                  <Label className="text-sm text-gray-700">{ex.question}</Label>
+                  <Textarea value={exerciseAnswers[`${lesson.id}-${i}`] || ''} onChange={e => setExerciseAnswers(p => ({ ...p, [`${lesson.id}-${i}`]: e.target.value }))} placeholder={ex.placeholder} className="mt-1" rows={2} />
+                </div>
+              ))}
+            </div>
+          )}
+          {!completed && (
+            <Button className="w-full bg-green-600 hover:bg-green-700 rounded-full" size="lg" onClick={() => { store.completeLesson(phase.id, lesson.id); setActiveLesson(null); }}>
+              <Check className="w-4 h-4 mr-2" /> Marcar como Concluída
+            </Button>
+          )}
+          {completed && <div className="text-center py-3 text-green-600 font-medium">✅ Lição concluída!</div>}
+        </motion.div>
+      );
+    }
+    return (
+      <motion.div {...fade} className="pt-4 px-4 space-y-4">
+        <button onClick={() => store.setView('phases')} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+        <div className={`bg-gradient-to-r ${phase.color} rounded-2xl p-5 text-white`}>
+          <span className="text-4xl">{phase.emoji}</span>
+          <h2 className="text-xl font-bold mt-2">{phase.title}</h2>
+          <p className="text-white/80 text-sm mt-1">{phase.description}</p>
+        </div>
+        <div className="space-y-2">
+          {phase.lessons.map((lesson, i) => {
+            const done = store.isLessonCompleted(phase.id, lesson.id);
+            return (
+              <button key={lesson.id} onClick={() => { setActiveLesson(lesson.id); setExerciseAnswers({}); }} className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 text-left hover:shadow-md transition-shadow">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600'}`}>{done ? <Check className="w-4 h-4" /> : i + 1}</div>
+                <div className="flex-1 min-w-0"><p className={`font-medium text-sm ${done ? 'text-green-600' : 'text-gray-800'}`}>{lesson.title}</p><p className="text-xs text-gray-400">{done ? 'Concluída ✓' : `XP: ${lesson.xp}pts`}</p></div>
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ============== NUTRITION ==============
+  function NutritionScreen() {
+    const cats = ['all', ...Object.keys(categoryLabels)];
+    const filtered = recipeFilter === 'all' ? recipes : recipes.filter(r => r.category === recipeFilter);
+    const searched = searchQuery ? filtered.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())) : filtered;
+    const filteredJuices = searchQuery ? juices.filter(j => j.name.toLowerCase().includes(searchQuery.toLowerCase())) : juices;
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-800">Nutrição 🥗</h1>
+        <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar receitas ou sucos..." className="pl-9" /></div>
+        <div className="flex gap-2 bg-white rounded-xl p-1 shadow-sm">
+          <button onClick={() => setNutritionTab('recipes')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${nutritionTab === 'recipes' ? 'bg-green-500 text-white' : 'text-gray-600'}`}>🍽️ Receitas</button>
+          <button onClick={() => setNutritionTab('juices')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${nutritionTab === 'juices' ? 'bg-green-500 text-white' : 'text-gray-600'}`}>🧃 Sucos</button>
+        </div>
+        {nutritionTab === 'recipes' && <>
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">{cats.map(c => <button key={c} onClick={() => setRecipeFilter(c)} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${recipeFilter === c ? 'bg-green-600 text-white' : 'bg-white text-gray-600 shadow-sm'}`}>{c === 'all' ? 'Todas' : categoryLabels[c as keyof typeof categoryLabels]}</button>)}</div>
+          <div className="space-y-3">{searched.map(r => <RecipeCard key={r.id} recipe={r} />)}</div>
+        </>}
+        {nutritionTab === 'juices' && <div className="space-y-3">{filteredJuices.map(j => <JuiceCard key={j.id} juice={j} />)}</div>}
+      </motion.div>
+    );
+  }
+
+  function RecipeCard({ recipe }: { recipe: Recipe }) {
+    return (
+      <Card className="overflow-hidden"><button onClick={() => store.selectRecipe(recipe.id)} className="w-full text-left">
+        <CardContent className="p-3 flex items-center gap-3">
+          <span className="text-2xl">{recipe.emoji}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm text-gray-800 truncate">{recipe.name}</p>
+            <p className="text-xs text-gray-500">{recipe.calories}kcal · {recipe.prepTime}min</p>
+          </div>
+          <button onClick={e => { e.stopPropagation(); store.toggleFavorite(recipe.id); }} className="p-1"><Heart className={`w-5 h-5 ${store.isFavorite(recipe.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button>
+        </CardContent>
+      </button></Card>
+    );
+  }
+
+  function JuiceCard({ juice }: { juice: Juice }) {
+    return (
+      <Card className="overflow-hidden"><button onClick={() => store.selectJuice(juice.id)} className="w-full text-left">
+        <CardContent className="p-3 flex items-center gap-3">
+          <span className="text-2xl">🧃</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm text-gray-800 truncate">{juice.name}</p>
+            <p className="text-xs text-gray-500">{juice.prepTime}min · {juice.benefits.length} benefícios</p>
+          </div>
+          <button onClick={e => { e.stopPropagation(); store.toggleFavorite(juice.id); }} className="p-1"><Heart className={`w-5 h-5 ${store.isFavorite(juice.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button>
+        </CardContent>
+      </button></Card>
+    );
+  }
+
+  // ============== RECIPE DETAIL ==============
+  function RecipeDetail() {
+    const r = recipes.find(x => x.id === store.selectedRecipeId);
+    if (!r) return null;
+    return (
+      <motion.div {...fade} className="pt-4 px-4 space-y-4">
+        <button onClick={() => store.setView('nutrition')} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+        <div className="flex items-start justify-between"><h2 className="text-xl font-bold text-gray-800 flex-1">{r.emoji} {r.name}</h2><button onClick={() => store.toggleFavorite(r.id)}><Heart className={`w-6 h-6 ${store.isFavorite(r.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button></div>
+        {r.description && <p className="text-gray-600 text-sm">{r.description}</p>}
+        <div className="flex gap-3 flex-wrap">
+          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium">🔥 {r.calories}kcal</span>
+          {r.protein && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">🥩 {r.protein}g prot</span>}
+          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">⏱️ {r.prepTime}min</span>
+          <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">👥 {r.servings} porções</span>
+        </div>
+        <Card><CardContent className="p-4 space-y-2">
+          <h3 className="font-bold text-gray-800">🥘 Ingredientes</h3>
+          {r.ingredients.map((ing, i) => <p key={i} className="text-sm text-gray-700">• {ing}</p>)}
+        </CardContent></Card>
+        <Card><CardContent className="p-4 space-y-2">
+          <h3 className="font-bold text-gray-800">👨‍🍳 Modo de Preparo</h3>
+          {r.instructions.map((step, i) => <p key={i} className="text-sm text-gray-700"><span className="font-medium text-green-600">{i + 1}.</span> {step}</p>)}
+        </CardContent></Card>
+        {r.tips && <Card className="bg-amber-50 border-amber-200"><CardContent className="p-4"><p className="text-sm text-amber-800">💡 <strong>Dica:</strong> {r.tips}</p></CardContent></Card>}
+      </motion.div>
+    );
+  }
+
+  // ============== JUICE DETAIL ==============
+  function JuiceDetail() {
+    const j = juices.find(x => x.id === store.selectedJuiceId);
+    if (!j) return null;
+    return (
+      <motion.div {...fade} className="pt-4 px-4 space-y-4">
+        <button onClick={() => store.setView('nutrition')} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Voltar</button>
+        <div className="flex items-start justify-between"><h2 className="text-xl font-bold text-gray-800 flex-1">🧃 {j.name}</h2><button onClick={() => store.toggleFavorite(j.id)}><Heart className={`w-6 h-6 ${store.isFavorite(j.id) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`} /></button></div>
+        <p className="text-gray-600 text-sm">{j.description}</p>
+        <Card><CardContent className="p-4 space-y-2">
+          <h3 className="font-bold text-gray-800">✨ Benefícios</h3>
+          {j.benefits.map((b, i) => <p key={i} className="text-sm text-gray-700">• {b}</p>)}
+        </CardContent></Card>
+        <Card><CardContent className="p-4 space-y-2">
+          <h3 className="font-bold text-gray-800">🥘 Ingredientes</h3>
+          {j.ingredients.map((ing, i) => <p key={i} className="text-sm text-gray-700">• {ing}</p>)}
+        </CardContent></Card>
+        <Card><CardContent className="p-4 space-y-2">
+          <h3 className="font-bold text-gray-800">👨‍🍳 Preparo</h3>
+          {j.instructions.map((step, i) => <p key={i} className="text-sm text-gray-700"><span className="font-medium text-green-600">{i + 1}.</span> {step}</p>)}
+        </CardContent></Card>
+      </motion.div>
+    );
+  }
+
+  // ============== MEAL PLAN ==============
+  function MealPlanScreen() {
+    const meal = mealPlan[selectedMealTab];
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+        <div><h1 className="text-2xl font-bold text-gray-800">Plano Alimentar 📋</h1><p className="text-gray-500 text-sm mt-1">Nutricionista: Natalia Cavalcante | CRN 17639</p></div>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          {mealPlan.map((m, i) => <button key={m.key} onClick={() => setSelectedMealTab(i)} className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedMealTab === i ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{m.emoji} {m.label}</button>)}
+        </div>
+        <div className="text-center text-sm text-gray-500">Total: <span className="font-bold text-green-600">{mealPlan.reduce((a, m) => a + m.calories, 0)} kcal</span></div>
+        {meal && <>
+          <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between"><h3 className="font-bold text-gray-800">{meal.emoji} {meal.label}</h3><span className="text-sm text-green-600 font-medium">{meal.calories} kcal</span></div>
+            {meal.options.map((opt, oi) => <div key={oi}>{meal.options.length > 1 && <p className="text-xs font-medium text-gray-500 mb-2">{opt.label}</p>}
+              {opt.items.map((item, ii) => <div key={ii} className="flex justify-between py-1.5 border-b border-gray-50 last:border-0"><span className="text-sm text-gray-700">{item.name}</span><span className="text-xs text-gray-400">{item.amount}</span></div>)}</div>)}
+          </div>
+          {meal.substitutions.length > 0 && <Card><CardContent className="p-4">
+            <button onClick={() => setExpandedSubs(p => ({ ...p, eal.key]: !peal.key] }))} className="w-full flex items-center justify-between"><h4 className="font-bold text-gray-800 text-sm">🔄 Substituições</h4><ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubseal.key] ? 'rotate-90' : ''}`} /></button>
+            {expandedSubseal.key] && <div className="mt-3 space-y-3">{meal.substitutions.map((s, i) => <div key={i}><p className="text-sm font-medium text-gray-700">{s.original} →</p><p className="text-xs text-gray-500 mt-0.5 ml-2">{s.alternatives.join(' | ')}</p></div>)}</div>}
+          </CardContent></Card>}
+        </>}
+        <Card><CardContent className="p-4 space-y-3">
+          <h3 className="font-bold text-gray-800">⚠️ Orientações</h3>
+          {nutritionalGuidelines.map((g, i) => <div key={i} className="flex gap-3 items-start"><span className="text-lg">{g.icon}</span><div><p className="text-sm font-medium text-gray-800">{g.title}</p><p className="text-xs text-gray-500">{g.desc}</p></div></div>)}
+        </CardContent></Card>
+      </motion.div>
+    );
+  }
+
+  // ============== WORKOUT ==============
+  function WorkoutScreen() {
+    const day = workoutPlan[selectedWorkoutDay];
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-800">Ficha de Treino 🏋️</h1>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          {workoutPlan.map((d, i) => <button key={d.key} onClick={() => setSelectedWorkoutDay(i)} className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedWorkoutDay === i ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{d.emoji} {d.label}</button>)}
+        </div>
+        {day && <>
+          <div className={`bg-gradient-to-r ${day.color} rounded-2xl p-5 text-white`}><span className="text-3xl">{day.emoji}</span><h2 className="text-xl font-bold mt-2">{day.label} - {day.muscle}</h2></div>
+          <div className="space-y-2">
+            {day.exercises.map((ex, i) => {
+              const key = `${day.key}-${i}`;
+              const done = workoutChecks[key] || false;
+              return (
+                <button key={i} onClick={() => toggleWorkoutCheck(key)} className={`w-full bg-white rounded-xl p-4 shadow-sm border flex items-center gap-3 text-left transition-all ${done ? 'border-green-300 bg-green-50' : 'border-gray-100'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 ${done ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300'}`}>{done && <Check className="w-4 h-4" />}</div>
+                  <div className="flex-1"><p className={`font-medium text-sm ${done ? 'text-green-600 line-through' : 'text-gray-800'}`}>{ex.name}</p><p className="text-xs text-gray-400">{ex.sets} · Descanso: {ex.rest}</p></div>
+                </button>
+              );
+            })}
+          </div>
+        </>}
+      </motion.div>
+    );
+  }
+
+  // ============== ACHIEVEMENTS ==============
+  function AchievementsScreen() {
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-800">Conquistas 🏆</h1>
+        <div className="grid grid-cols-3 gap-3">
+          {achievements.map((a, i) => {
+            const unlocked = isUnlocked(a);
+            return (
+              <div key={i} className={`rounded-2xl p-3 text-center transition-all ${unlocked ? 'bg-green-50 border-2 border-green-300 shadow-md' : 'bg-white border border-gray-100 shadow-sm opacity-60'}`}>
+                <span className="text-3xl">{a.emoji}</span>
+                <p className="text-xs font-bold mt-2 text-gray-800 leading-tight">{a.name}</p>
+                <p className="text-[10px] text-gray-500 mt-1 leading-tight">{a.desc}</p>
+                {unlocked && <p className="text-[10px] text-green-600 font-medium mt-1">✅ Desbloqueada</p>}
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ============== PROFILE ==============
+  function ProfileScreen() {
+    if (editing) {
+      return (
+        <motion.div {...fade} className="pt-6 px-4 space-y-4">
+          <button onClick={() => { setEditing(false); }} className="flex items-center gap-1 text-sm text-gray-500"><ChevronLeft className="w-4 h-4" /> Cancelar</button>
+          <h2 className="text-xl font-bold text-gray-800">Editar Perfil</h2>
+          <Card><CardContent className="p-4 space-y-3">
+            <div><Label className="text-sm">Peso Atual (kg)</Label><Input type="number" value={editForm.weight} onChange={e => setEditForm(f => ({ ...f, weight: e.target.value }))} className="mt-1" /></div>
+            <div><Label className="text-sm">Peso Objetivo (kg)</Label><Input type="number" value={editForm.goalWeight} onChange={e => setEditForm(f => ({ ...f, goalWeight: e.target.value }))} className="mt-1" /></div>
+            <div><Label className="text-sm">Altura (cm)</Label><Input type="number" value={editForm.height} onChange={e => setEditForm(f => ({ ...f, height: e.target.value }))} className="mt-1" /></div>
+          </CardContent></Card>
+          <Button className="w-full bg-green-600 hover:bg-green-700 rounded-full" onClick={() => { store.updateProfile({ weight: parseFloat(editForm.weight), goalWeight: parseFloat(editForm.goalWeight), height: parseFloat(editForm.height) }); setEditing(false); }}>Salvar</Button>
+        </motion.div>
+      );
+    }
+    return (
+      <motion.div {...fade} className="pt-6 px-4 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-800">Meu Perfil 👤</h1>
+        <Card><CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold">{user!.name.charAt(0).toUpperCase()}</div><div><p className="font-bold text-gray-800">{user!.name}</p><p className="text-sm text-gray-500">{user!.email}</p></div></div><Button variant="ghost" size="icon" onClick={() => setEditing(true)}><Edit3 className="w-4 h-4" /></Button></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-lg font-bold text-gray-800">{user!.weight}</p><p className="text-xs text-gray-500">Peso (kg)</p></div>
+            <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-lg font-bold text-green-600">{user!.goalWeight}</p><p className="text-xs text-gray-500">Meta (kg)</p></div>
+            <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-lg font-bold text-gray-800">Nv.{level}</p><p className="text-xs text-gray-500">Nível</p></div>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 space-y-3">
+          <h3 className="font-bold text-gray-800">📊 Progresso</h3>
+          <Progress value={progressPct} className="h-3" />
+          <p className="text-sm text-gray-600">{completedCount} de {totalL} lições ({Math.round(progressPct)}%)</p>
+          <div className="space-y-2 mt-3">{phases.map(p => { const done = store.getPhaseCompletedCount(p.id); const total = p.lessons.length; return <div key={p.id} className="flex items-center gap-2"><span className="text-sm">{p.emoji}</span><p className="text-xs text-gray-600 flex-1">{p.title}</p><p className="text-xs text-gray-500">{done}/{total}</p></div>; })}</div>
+        </CardContent></Card>
+        <Button variant="outline" className="w-full text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Deseja sair? Seus dados serão apagados.')) store.logout(); }}><LogOut className="w-4 h-4 mr-2" /> Sair</Button>
+      </motion.div>
+    );
+  }
+}
