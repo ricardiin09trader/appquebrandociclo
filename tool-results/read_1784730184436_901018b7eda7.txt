@@ -1,0 +1,2002 @@
+   680→  const handleLogin = async () => {
+   681→    if (!email || !password) {
+   682→      setError('Preencha todos os campos');
+   683→      return;
+   684→    }
+   685→    setLoading(true);
+   686→    setError('');
+   687→    try {
+   688→      const res = await fetch('/api/auth/login', {
+   689→        method: 'POST',
+   690→        headers: { 'Content-Type': 'application/json' },
+   691→        body: JSON.stringify({ email, password }),
+   692→      });
+   693→      const data = await res.json();
+   694→      if (!res.ok) {
+   695→        setError(data.error || 'Erro ao fazer login');
+   696→        setLoading(false);
+   697→        return;
+   698→      }
+   699→      login(data.user, data.userId);
+   700→    } catch (err) {
+   701→      setError('Erro de conexão');
+   702→      setLoading(false);
+   703→    }
+   704→  };
+   705→
+   706→  const handleRegister = async () => {
+   707→    if (step < 3) {
+   708→      if (step === 1) {
+   709→        if (!name || !email || !password) {
+   710→          setError('Preencha todos os campos');
+   711→          return;
+   712→        }
+   713→        if (password !== confirmPassword) {
+   714→          setError('As senhas não coincidem');
+   715→          return;
+   716→        }
+   717→        if (password.length < 6) {
+   718→          setError('A senha deve ter pelo menos 6 caracteres');
+   719→          return;
+   720→        }
+   721→      }
+   722→      if (step === 2 && !weight) {
+   723→        setError('Informe seu peso atual');
+   724→        return;
+   725→      }
+   726→      setStep(step + 1);
+   727→      setError('');
+   728→      return;
+   729→    }
+   730→
+   731→    if (!goalWeight) {
+   732→      setError('Informe sua meta de peso');
+   733→      return;
+   734→    }
+   735→
+   736→    setLoading(true);
+   737→    setError('');
+   738→    try {
+   739→      const res = await fetch('/api/auth/register', {
+   740→        method: 'POST',
+   741→        headers: { 'Content-Type': 'application/json' },
+   742→        body: JSON.stringify({
+   743→          name,
+   744→          email,
+   745→          password,
+   746→          weight: parseFloat(weight),
+   747→          goalWeight: parseFloat(goalWeight),
+   748→          objective: 'lose',
+   749→        }),
+   750→      });
+   751→      const data = await res.json();
+   752→      if (!res.ok) {
+   753→        setError(data.error || 'Erro ao criar conta');
+   754→        setLoading(false);
+   755→        return;
+   756→      }
+   757→      login(data.user, data.userId);
+   758→    } catch (err) {
+   759→      setError('Erro de conexão');
+   760→      setLoading(false);
+   761→    }
+   762→  };
+   763→
+   764→  return (
+   765→    <motion.div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+   766→      {/* Hero */}
+   767→      <div className="relative overflow-hidden">
+   768→        <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-transparent" />
+   769→        <div className="relative max-w-lg mx-auto px-6 py-8">
+   770→          <motion.div className="text-center" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
+   771→            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl flex items-center justify-center shadow-xl">
+   772→              <span className="text-4xl">🌱</span>
+   773→            </div>
+   774→            <h1 className="text-3xl font-bold text-gray-800 mb-2">Quebrando Ciclo</h1>
+   775→            <p className="text-base text-gray-600">Sua jornada de transformação</p>
+   776→          </motion.div>
+   777→        </div>
+   778→      </div>
+   779→
+   780→      {/* Progress Steps */}
+   781→      {mode === 'register' && (
+   782→        <div className="flex items-center justify-center gap-2 mb-4">
+   783→          {[1, 2, 3].map((s) => (
+   784→            <div key={s} className="flex items-center">
+   785→              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+   786→                s < step ? 'bg-green-500 text-white' : s === step ? 'bg-green-500 text-white shadow-lg' : 'bg-gray-200 text-gray-400'
+   787→              }`}>
+   788→                {s < step ? '✓' : s}
+   789→              </div>
+   790→              {s < 3 && <div className={`w-10 h-1 mx-1 rounded ${s < step ? 'bg-green-500' : 'bg-gray-200'}`} />}
+   791→            </div>
+   792→          ))}
+   793→        </div>
+   794→      )}
+   795→
+   796→      {/* Intro Screen */}
+   797→      {mode === 'intro' && (
+   798→        <div className="max-w-lg mx-auto px-6">
+   799→          <div className="space-y-3 mb-6">
+   800→            {journeyPhases.slice(0, 4).map((phase, index) => (
+   801→              <motion.div 
+   802→                key={phase.id}
+   803→                initial={{ x: -20, opacity: 0 }} 
+   804→                animate={{ x: 0, opacity: 1 }} 
+   805→                transition={{ delay: 0.1 * index }}
+   806→                className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100"
+   807→              >
+   808→                <div className={`w-12 h-12 bg-gradient-to-r ${phase.color} rounded-xl flex items-center justify-center text-xl shadow-sm text-white`}>
+   809→                  {phase.emoji}
+   810→                </div>
+   811→                <div className="flex-1">
+   812→                  <span className="text-xs text-gray-400">Fase {phase.id}</span>
+   813→                  <h3 className="font-semibold text-gray-800 text-sm">{phase.title}</h3>
+   814→                </div>
+   815→              </motion.div>
+   816→            ))}
+   817→          </div>
+   818→
+   819→          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
+   820→            <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Bem-vinda! 💚</h3>
+   821→            <div className="space-y-3">
+   822→              <Button onClick={() => setMode('login')} className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-xl font-semibold">
+   823→                <Mail className="mr-2 h-5 w-5" /> Entrar com Email
+   824→              </Button>
+   825→              <Button onClick={() => setMode('register')} variant="outline" className="w-full h-12 rounded-xl font-semibold">
+   826→                <User className="mr-2 h-5 w-5" /> Criar Conta
+   827→              </Button>
+   828→            </div>
+   829→            
+   830→            {/* Admin Access Link */}
+   831→            <div className="mt-4 pt-4 border-t border-gray-100">
+   832→              <button
+   833→                onClick={() => {
+   834→                  localStorage.setItem('adminLoggedIn', 'true');
+   835→                  window.location.reload();
+   836→                }}
+   837→                className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-amber-600 transition-colors"
+   838→              >
+   839→                <Shield className="h-4 w-4" />
+   840→                Acesso Admin
+   841→              </button>
+   842→            </div>
+   843→            
+   844→            <p className="text-xs text-gray-400 text-center mt-3">
+   845→              Ao continuar, você aceita nossos termos de uso
+   846→            </p>
+   847→          </motion.div>
+   848→        </div>
+   849→      )}
+   850→
+   851→      {/* Login Screen */}
+   852→      {mode === 'login' && (
+   853→        <div className="max-w-lg mx-auto px-6">
+   854→          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+   855→            <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Entrar 👋</h3>
+   856→            
+   857→            {error && (
+   858→              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+   859→                <XCircle className="h-4 w-4 flex-shrink-0" /> {error}
+   860→              </div>
+   861→            )}
+   862→
+   863→            <div className="space-y-4">
+   864→              <div>
+   865→                <Label className="text-gray-600">Email</Label>
+   866→                <div className="relative mt-1">
+   867→                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+   868→                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10 h-12" />
+   869→                </div>
+   870→              </div>
+   871→              <div>
+   872→                <Label className="text-gray-600">Senha</Label>
+   873→                <div className="relative mt-1">
+   874→                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+   875→                  <Input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sua senha" className="pl-10 pr-10 h-12" />
+   876→                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+   877→                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+   878→                  </button>
+   879→                </div>
+   880→              </div>
+   881→              <Button onClick={handleLogin} disabled={loading} className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600">
+   882→                {loading ? 'Entrando...' : 'Entrar'}
+   883→              </Button>
+   884→              <button onClick={() => { setMode('intro'); setError(''); }} className="w-full text-sm text-gray-500 hover:text-gray-700">
+   885→                Voltar
+   886→              </button>
+   887→            </div>
+   888→          </motion.div>
+   889→        </div>
+   890→      )}
+   891→
+   892→      {/* Register Screen */}
+   893→      {mode === 'register' && (
+   894→        <div className="max-w-lg mx-auto px-6">
+   895→          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} key={step}>
+   896→            {/* Step 1 */}
+   897→            {step === 1 && (
+   898→              <>
+   899→                <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Criar Conta 🌟</h3>
+   900→                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+   901→                <div className="space-y-3">
+   902→                  <div>
+   903→                    <Label className="text-gray-600 text-sm">Nome</Label>
+   904→                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-1 h-11" />
+   905→                  </div>
+   906→                  <div>
+   907→                    <Label className="text-gray-600 text-sm">Email</Label>
+   908→                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1 h-11" />
+   909→                  </div>
+   910→                  <div>
+   911→                    <Label className="text-gray-600 text-sm">Senha</Label>
+   912→                    <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="mt-1 h-11" />
+   913→                  </div>
+   914→                  <div>
+   915→                    <Label className="text-gray-600 text-sm">Confirmar Senha</Label>
+   916→                    <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a senha" className="mt-1 h-11" />
+   917→                  </div>
+   918→                </div>
+   919→              </>
+   920→            )}
+   921→
+   922→            {/* Step 2 */}
+   923→            {step === 2 && (
+   924→              <>
+   925→                <div className="text-center mb-4">
+   926→                  <div className="w-14 h-14 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-3">
+   927→                    <span className="text-2xl">⚖️</span>
+   928→                  </div>
+   929→                  <h3 className="text-lg font-bold">Qual é seu peso atual?</h3>
+   930→                  <p className="text-gray-500 text-sm">Isso nos ajuda a calcular sua meta de água</p>
+   931→                </div>
+   932→                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+   933→                <div className="space-y-3">
+   934→                  <div>
+   935→                    <Label className="text-gray-600 text-sm">Peso atual (kg)</Label>
+   936→                    <Input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ex: 70" className="mt-1 h-14 text-lg text-center" />
+   937→                  </div>
+   938→                  {weight && (
+   939→                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+   940→                      <p className="text-sm text-blue-600">💧 <strong>Meta de água:</strong> {Math.ceil((parseFloat(weight) * 35) / 250)} copos/dia</p>
+   941→                      <p className="text-xs text-blue-500">({Math.round(parseFloat(weight) * 35)}ml = peso × 35ml)</p>
+   942→                    </div>
+   943→                  )}
+   944→                </div>
+   945→              </>
+   946→            )}
+   947→
+   948→            {/* Step 3 */}
+   949→            {step === 3 && (
+   950→              <>
+   951→                <div className="text-center mb-4">
+   952→                  <div className="w-14 h-14 mx-auto bg-amber-100 rounded-full flex items-center justify-center mb-3">
+   953→                    <Target className="h-7 w-7 text-amber-600" />
+   954→                  </div>
+   955→                  <h3 className="text-lg font-bold">Qual é sua meta?</h3>
+   956→                  <p className="text-gray-500 text-sm">O objetivo que deseja alcançar</p>
+   957→                </div>
+   958→                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+   959→                <div className="space-y-3">
+   960→                  <div>
+   961→                    <Label className="text-gray-600 text-sm">Peso meta (kg)</Label>
+   962→                    <Input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} placeholder="Ex: 60" className="mt-1 h-14 text-lg text-center" />
+   963→                  </div>
+   964→                  {weight && goalWeight && (
+   965→                    <div className="bg-gradient-to-r from-green-50 to-amber-50 rounded-xl p-4 text-center">
+   966→                      <p className="text-sm text-gray-700">🎯 <strong>Olá, {name}!</strong></p>
+   967→                      <p className="text-sm text-gray-600 mt-2">Você vai sair de <strong>{weight}kg</strong> e chegar a <strong>{goalWeight}kg</strong></p>
+   968→                      <p className="text-lg font-bold text-green-600 mt-2">Perda de {(parseFloat(weight) - parseFloat(goalWeight)).toFixed(1)}kg 🌟</p>
+   969→                    </div>
+   970→                  )}
+   971→                </div>
+   972→              </>
+   973→            )}
+   974→
+   975→            {/* Buttons */}
+   976→            <div className="flex gap-3 mt-5">
+   977→              {step > 1 ? (
+   978→                <>
+   979→                  <Button onClick={() => setStep(step - 1)} variant="outline" className="flex-1 h-11" disabled={loading}>Voltar</Button>
+   980→                  <Button onClick={handleRegister} className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600" disabled={loading}>
+   981→                    {loading ? 'Criando...' : step === 3 ? 'Iniciar Jornada' : 'Continuar'}
+   982→                  </Button>
+   983→                </>
+   984→              ) : (
+   985→                <>
+   986→                  <Button onClick={() => { setMode('intro'); setError(''); }} variant="outline" className="flex-1 h-11">Voltar</Button>
+   987→                  <Button onClick={handleRegister} className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600">Continuar</Button>
+   988→                </>
+   989→              )}
+   990→            </div>
+   991→          </motion.div>
+   992→        </div>
+   993→      )}
+   994→
+   995→      <div className="h-8" />
+   996→    </motion.div>
+   997→  );
+   998→}
+   999→
+  1000→// ============================================
+  1001→// DASHBOARD PRINCIPAL
+  1002→// ============================================
+  1003→function Dashboard() {
+  1004→  const { user, userId, setCurrentView, setSelectedPhase, updateUserProgress } = useAppStore();
+  1005→  const { theme, toggleTheme } = useThemeStore();
+  1006→  const [todayCheck, setTodayCheck] = useState({
+  1007→    drankWater: false, followedMeal: false, readContent: false, exercised: false, mindfulness: false,
+  1008→  });
+  1009→  const [water, setWater] = useState({ glasses: 0, goal: 8 });
+  1010→  const [showWaterModal, setShowWaterModal] = useState(false);
+  1011→  const [showPWABanner, setShowPWABanner] = useState(false);
+  1012→  const [userProgress, setUserProgress] = useState<UserProgress>({
+  1013→    phase1Lessons: [],
+  1014→    phase2Lessons: [],
+  1015→    phase3Lessons: [],
+  1016→    phase4Lessons: [],
+  1017→    exerciseAnswers: {},
+  1018→  });
+  1019→  const [apiProgress, setApiProgress] = useState<{
+  1020→    xp: number;
+  1021→    level: number;
+  1022→    streak: number;
+  1023→    totalDays: number;
+  1024→  } | null>(null);
+  1025→
+  1026→  const randomQuoteIndex = Math.floor(Math.random() * motivationalPhrases.length);
+  1027→
+  1028→  // Check if PWA banner should be shown
+  1029→  useEffect(() => {
+  1030→    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+  1031→    if (!dismissed && typeof window !== 'undefined') {
+  1032→      // Show banner after 5 seconds
+  1033→      const timer = setTimeout(() => setShowPWABanner(true), 5000);
+  1034→      return () => clearTimeout(timer);
+  1035→    }
+  1036→  }, []);
+  1037→
+  1038→  // Apply theme
+  1039→  useEffect(() => {
+  1040→    applyTheme(theme);
+  1041→  }, [theme]);
+  1042→
+  1043→  const dismissPWABanner = () => {
+  1044→    setShowPWABanner(false);
+  1045→    localStorage.setItem('pwa-banner-dismissed', 'true');
+  1046→  };
+  1047→
+  1048→  const fetchTodayCheck = useCallback(async () => {
+  1049→    try {
+  1050→      const res = await fetch('/api/user/checkin', { headers: { 'x-user-id': userId || '' } });
+  1051→      setTodayCheck(await res.json());
+  1052→    } catch (error) { console.error('Erro:', error); }
+  1053→  }, [userId]);
+  1054→
+  1055→  const fetchWater = useCallback(async () => {
+  1056→    try {
+  1057→      const res = await fetch('/api/water', { headers: { 'x-user-id': userId || '' } });
+  1058→      const data = await res.json();
+  1059→      setWater({ glasses: data.glasses, goal: data.goal });
+  1060→    } catch (error) { console.error('Erro:', error); }
+  1061→  }, [userId]);
+  1062→
+  1063→  const fetchProgress = useCallback(async () => {
+  1064→    try {
+  1065→      const res = await fetch('/api/user/progress', { headers: { 'x-user-id': userId || '' } });
+  1066→      if (res.ok) {
+  1067→        const data = await res.json();
+  1068→        setApiProgress({
+  1069→          xp: data.xp || 0,
+  1070→          level: data.level || 1,
+  1071→          streak: data.streak || 0,
+  1072→          totalDays: data.totalDays || 0,
+  1073→        });
+  1074→        updateUserProgress({
+  1075→          xp: data.xp || 0,
+  1076→          level: data.level || 1,
+  1077→          streak: data.streak || 0,
+  1078→          totalDays: data.totalDays || 0,
+  1079→        });
+  1080→      }
+  1081→    } catch (error) { console.error('Erro ao buscar progresso:', error); }
+  1082→  }, [userId, updateUserProgress]);
+  1083→
+  1084→  useEffect(() => {
+  1085→    if (userId) {
+  1086→      fetchTodayCheck();
+  1087→      fetchWater();
+  1088→      fetchProgress();
+  1089→    }
+  1090→    // Load user progress from localStorage
+  1091→    const saved = localStorage.getItem('quebrando-ciclo-progress');
+  1092→    if (saved) setUserProgress(JSON.parse(saved));
+  1093→  }, [fetchTodayCheck, fetchWater, fetchProgress, userId]);
+  1094→
+  1095→  const handleCheck = async (key: keyof typeof todayCheck) => {
+  1096→    const newValue = !todayCheck[key];
+  1097→    setTodayCheck({ ...todayCheck, [key]: newValue });
+  1098→    try {
+  1099→      await fetch('/api/user/checkin', {
+  1100→        method: 'POST',
+  1101→        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+  1102→        body: JSON.stringify({ ...todayCheck, [key]: newValue }),
+  1103→      });
+  1104→      // Refresh progress after check-in
+  1105→      fetchProgress();
+  1106→    } catch (error) { console.error('Erro:', error); }
+  1107→  };
+  1108→
+  1109→  const handleWater = async (increment: number) => {
+  1110→    const newGlasses = Math.max(0, water.glasses + increment);
+  1111→    setWater({ ...water, glasses: newGlasses });
+  1112→    try {
+  1113→      await fetch('/api/water', {
+  1114→        method: 'POST',
+  1115→        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+  1116→        body: JSON.stringify({ glasses: newGlasses }),
+  1117→      });
+  1118→    } catch (error) { console.error('Erro:', error); }
+  1119→  };
+  1120→
+  1121→  // Use API progress if available, otherwise fall back to user store
+  1122→  const displayXp = apiProgress?.xp ?? user?.progress?.xp ?? 0;
+  1123→  const displayLevel = apiProgress?.level ?? user?.progress?.level ?? 1;
+  1124→  const displayStreak = apiProgress?.streak ?? user?.progress?.streak ?? 0;
+  1125→
+  1126→  const quote = motivationalPhrases[randomQuoteIndex];
+  1127→  const checks = [
+  1128→    { key: 'drankWater' as const, label: 'Água', emoji: '💧' },
+  1129→    { key: 'followedMeal' as const, label: 'Dieta', emoji: '🥗' },
+  1130→    { key: 'readContent' as const, label: 'Conteúdo', emoji: '📚' },
+  1131→    { key: 'exercised' as const, label: 'Treino', emoji: '🏃' },
+  1132→    { key: 'mindfulness' as const, label: 'Mente', emoji: '🧘' },
+  1133→  ];
+  1134→  const completedChecks = Object.values(todayCheck).filter(Boolean).length;
+  1135→  const xpToday = completedChecks * 10;
+  1136→
+  1137→  // Calculate total progress
+  1138→  const totalLessons = journeyPhases.reduce((acc, p) => acc + p.lessons.length, 0);
+  1139→  const completedLessons = userProgress.phase1Lessons.length + userProgress.phase2Lessons.length + 
+  1140→                          userProgress.phase3Lessons.length + userProgress.phase4Lessons.length;
+  1141→  const progressPercent = Math.round((completedLessons / totalLessons) * 100);
+  1142→
+  1143→  return (
+  1144→    <motion.div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+  1145→      {/* PWA Install Banner */}
+  1146→      <AnimatePresence>
+  1147→        {showPWABanner && (
+  1148→          <motion.div
+  1149→            initial={{ y: -100, opacity: 0 }}
+  1150→            animate={{ y: 0, opacity: 1 }}
+  1151→            exit={{ y: -100, opacity: 0 }}
+  1152→            className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 shadow-lg"
+  1153→          >
+  1154→            <div className="max-w-lg mx-auto flex items-center gap-3">
+  1155→              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+  1156→                <Smartphone className="h-5 w-5" />
+  1157→              </div>
+  1158→              <div className="flex-1 min-w-0">
+  1159→                <p className="font-semibold text-sm">📱 Instale o App!</p>
+  1160→                <p className="text-xs text-purple-100 truncate">Adicione à tela inicial para acesso rápido</p>
+  1161→              </div>
+  1162→              <button
+  1163→                onClick={dismissPWABanner}
+  1164→                className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0"
+  1165→              >
+  1166→                <X className="h-4 w-4" />
+  1167→              </button>
+  1168→            </div>
+  1169→            <div className="max-w-lg mx-auto mt-3 flex gap-2">
+  1170→              <div className="flex-1 bg-white/10 rounded-lg p-2 text-xs text-center">
+  1171→                <strong>iPhone:</strong> Toque em <Share className="h-3 w-3 inline mx-1" /> → "Adicionar à Tela Início"
+  1172→              </div>
+  1173→              <div className="flex-1 bg-white/10 rounded-lg p-2 text-xs text-center">
+  1174→                <strong>Android:</strong> Menu ⋮ → "Adicionar à tela inicial"
+  1175→              </div>
+  1176→            </div>
+  1177→          </motion.div>
+  1178→        )}
+  1179→      </AnimatePresence>
+  1180→
+  1181→      {/* Header */}
+  1182→      <div className={`bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-b-3xl ${showPWABanner ? 'mt-28' : ''}`}>
+  1183→        <div className="flex items-center justify-between mb-4">
+  1184→          <div>
+  1185→            <p className="text-green-100 text-sm">Olá,</p>
+  1186→            <h1 className="text-2xl font-bold">{user?.name || 'Usuária'} ✨</h1>
+  1187→          </div>
+  1188→          <div className="flex items-center gap-2">
+  1189→            <button 
+  1190→              onClick={toggleTheme} 
+  1191→              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+  1192→              title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+  1193→            >
+  1194→              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+  1195→            </button>
+  1196→            <button onClick={() => setCurrentView('profile')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+  1197→              <User className="h-5 w-5" />
+  1198→            </button>
+  1199→          </div>
+  1200→        </div>
+  1201→        
+  1202→        {/* Progress Bar */}
+  1203→        <div className="bg-white/10 rounded-2xl p-4">
+  1204→          <div className="flex items-center justify-between mb-2">
+  1205→            <div className="flex items-center gap-2">
+  1206→              <span className="text-sm">Nível {displayLevel}</span>
+  1207→              <span className="text-xs bg-yellow-400/20 text-yellow-200 px-2 py-0.5 rounded-full">
+  1208→                {displayXp} XP
+  1209→              </span>
+  1210→            </div>
+  1211→            <span className="text-xs">{progressPercent}% completo</span>
+  1212→          </div>
+  1213→          <Progress value={(displayXp % 100)} className="h-2 bg-white/20" />
+  1214→          <div className="flex items-center justify-between mt-2">
+  1215→            <span className="text-xs text-green-100">🔥 {displayStreak} dias seguidos</span>
+  1216→            <span className="text-xs text-green-100">{completedLessons}/{totalLessons} lições</span>
+  1217→          </div>
+  1218→        </div>
+  1219→      </div>
+  1220→      
+  1221→      <div className="p-4 space-y-6">
+  1222→        {/* Quote */}
+  1223→        {quote && (
+  1224→          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-0 shadow-md">
+  1225→            <CardContent className="p-4">
+  1226→              <p className="text-gray-700 italic text-center leading-relaxed text-sm">"{quote.quote}"</p>
+  1227→            </CardContent>
+  1228→          </Card>
+  1229→        )}
+  1230→        
+  1231→        {/* Daily Tasks */}
+  1232→        <Card className="shadow-md">
+  1233→          <CardContent className="p-4">
+  1234→            <div className="flex items-center justify-between mb-3">
+  1235→              <h3 className="font-semibold flex items-center gap-2">
+  1236→                <Target className="h-5 w-5 text-green-500" /> Missões de Hoje
+  1237→              </h3>
+  1238→              <span className="text-sm text-green-500 font-medium">+{xpToday} XP</span>
+  1239→            </div>
+  1240→            <div className="grid grid-cols-5 gap-2">
+  1241→              {checks.map((check) => (
+  1242→                <button key={check.key} onClick={() => handleCheck(check.key)}
+  1243→                  className={`flex flex-col items-center p-2 rounded-xl transition-all ${todayCheck[check.key] ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-transparent'}`}>
+  1244→                  <span className="text-xl">{check.emoji}</span>
+  1245→                  <span className="text-xs mt-1 text-gray-600">{check.label}</span>
+  1246→                  {todayCheck[check.key] && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><Check className="h-3 w-3 text-green-500" /></motion.div>}
+  1247→                </button>
+  1248→              ))}
+  1249→            </div>
+  1250→          </CardContent>
+  1251→        </Card>
+  1252→        
+  1253→        {/* Water */}
+  1254→        <Card className="shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowWaterModal(true)}>
+  1255→          <CardContent className="p-4">
+  1256→            <div className="flex items-center justify-between">
+  1257→              <div className="flex items-center gap-3">
+  1258→                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">💧</div>
+  1259→                <div>
+  1260→                  <p className="font-semibold text-gray-800">Hidratação</p>
+  1261→                  <p className="text-sm text-gray-500">{water.glasses}/{water.goal} copos</p>
+  1262→                </div>
+  1263→              </div>
+  1264→              <Progress value={(water.glasses / water.goal) * 100} className="h-2 w-16" />
+  1265→            </div>
+  1266→          </CardContent>
+  1267→        </Card>
+  1268→        
+  1269→        {/* Journey Progress */}
+  1270→        <div>
+  1271→          <h3 className="font-bold text-gray-800 mb-3">📍 Sua Jornada</h3>
+  1272→          <div className="space-y-2">
+  1273→            {journeyPhases.map((phase) => {
+  1274→              const completedPhaseLessons = (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [];
+  1275→              const isComplete = completedPhaseLessons.length === phase.lessons.length && phase.lessons.length > 0;
+  1276→              const isInProgress = completedPhaseLessons.length > 0;
+  1277→              
+  1278→              return (
+  1279→                <Card 
+  1280→                  key={phase.id}
+  1281→                  className={`shadow-sm cursor-pointer active:scale-[0.99] transition-transform ${isComplete ? 'bg-green-50 border-green-200' : ''}`}
+  1282→                  onClick={() => { setSelectedPhase(phase.id); setCurrentView('phases'); }}
+  1283→                >
+  1284→                  <CardContent className="p-3">
+  1285→                    <div className="flex items-center gap-3">
+  1286→                      <div className={`w-12 h-12 bg-gradient-to-r ${phase.color} rounded-xl flex items-center justify-center text-xl shadow-sm ${isComplete ? 'opacity-100' : ''}`}>
+  1287→                        {isComplete ? '✅' : phase.emoji}
+  1288→                      </div>
+  1289→                      <div className="flex-1">
+  1290→                        <div className="flex items-center gap-2">
+  1291→                          <span className="text-xs text-gray-400">Fase {phase.id}</span>
+  1292→                          {isInProgress && !isComplete && (
+  1293→                            <span className="text-xs text-green-500">Em progresso</span>
+  1294→                          )}
+  1295→                        </div>
+  1296→                        <h4 className="font-semibold text-gray-800">{phase.title}</h4>
+  1297→                        <div className="flex items-center gap-2 mt-1">
+  1298→                          <Progress value={phase.lessons.length > 0 ? (completedPhaseLessons.length / phase.lessons.length) * 100 : 0} className="h-1.5 flex-1" />
+  1299→                          <span className="text-xs text-gray-400">{completedPhaseLessons.length}/{phase.lessons.length}</span>
+  1300→                        </div>
+  1301→                      </div>
+  1302→                      <ChevronRight className="h-5 w-5 text-gray-400" />
+  1303→                    </div>
+  1304→                  </CardContent>
+  1305→                </Card>
+  1306→              );
+  1307→            })}
+  1308→          </div>
+  1309→        </div>
+  1310→        
+  1311→        {/* Quick Access */}
+  1312→        <div className="grid grid-cols-2 gap-3">
+  1313→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('nutrition')}>
+  1314→            <CardContent className="p-3 text-center">
+  1315→              <div className="w-10 h-10 mx-auto bg-green-100 rounded-xl flex items-center justify-center text-xl">🥗</div>
+  1316→              <p className="font-medium text-sm mt-2">Nutrição</p>
+  1317→              <p className="text-xs text-gray-500">Receitas e Sucos</p>
+  1318→            </CardContent>
+  1319→          </Card>
+  1320→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('mealplan')}>
+  1321→            <CardContent className="p-3 text-center">
+  1322→              <div className="w-10 h-10 mx-auto bg-amber-100 rounded-xl flex items-center justify-center text-xl">📋</div>
+  1323→              <p className="font-medium text-sm mt-2">Plano 1500kcal</p>
+  1324→              <p className="text-xs text-gray-500">Menu completo</p>
+  1325→            </CardContent>
+  1326→          </Card>
+  1327→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('workout')}>
+  1328→            <CardContent className="p-3 text-center">
+  1329→              <div className="w-10 h-10 mx-auto bg-purple-100 rounded-xl flex items-center justify-center text-xl">💪</div>
+  1330→              <p className="font-medium text-sm mt-2">Ficha de Treino</p>
+  1331→              <p className="text-xs text-gray-500">5 dias</p>
+  1332→            </CardContent>
+  1333→          </Card>
+  1334→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('phases')}>
+  1335→            <CardContent className="p-3 text-center">
+  1336→              <div className="w-10 h-10 mx-auto bg-blue-100 rounded-xl flex items-center justify-center text-xl">📚</div>
+  1337→              <p className="font-medium text-sm mt-2">Jornada</p>
+  1338→              <p className="text-xs text-gray-500">4 fases</p>
+  1339→            </CardContent>
+  1340→          </Card>
+  1341→        </div>
+  1342→      </div>
+  1343→      
+  1344→      {/* Water Modal */}
+  1345→      <AnimatePresence>
+  1346→        {showWaterModal && (
+  1347→          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowWaterModal(false)}>
+  1348→            <motion.div className="bg-white rounded-t-3xl w-full max-w-lg p-6" initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} onClick={(e) => e.stopPropagation()}>
+  1349→              <div className="text-center mb-6">
+  1350→                <div className="text-5xl mb-3">💧</div>
+  1351→                <h3 className="text-xl font-bold">Hidratação</h3>
+  1352→                <p className="text-gray-500">Meta: {water.goal} copos por dia</p>
+  1353→              </div>
+  1354→              <div className="flex items-center justify-center gap-4 mb-6">
+  1355→                <Button variant="outline" size="lg" onClick={() => handleWater(-1)} className="rounded-full w-16 h-16"><Minus className="h-6 w-6" /></Button>
+  1356→                <div className="text-5xl font-bold text-blue-500 w-24 text-center">{water.glasses}</div>
+  1357→                <Button size="lg" onClick={() => handleWater(1)} className="rounded-full w-16 h-16 bg-blue-500 hover:bg-blue-600"><Plus className="h-6 w-6" /></Button>
+  1358→              </div>
+  1359→              <Progress value={(water.glasses / water.goal) * 100} className="h-3 mb-2" />
+  1360→              <p className="text-center text-sm text-gray-500">{(water.glasses * 250)}ml de {(water.goal * 250)}ml</p>
+  1361→              <Button onClick={() => setShowWaterModal(false)} className="w-full mt-6 h-12 rounded-xl">Confirmar</Button>
+  1362→            </motion.div>
+  1363→          </motion.div>
+  1364→        )}
+  1365→      </AnimatePresence>
+  1366→      
+  1367→      <BottomNav />
+  1368→    </motion.div>
+  1369→  );
+  1370→}
+  1371→
+  1372→// ============================================
+  1373→// BOTTOM NAVIGATION
+  1374→// ============================================
+  1375→function BottomNav() {
+  1376→  const { currentView, setCurrentView } = useAppStore();
+  1377→  const navItems = [
+  1378→    { view: 'dashboard' as const, icon: Home, label: 'Início' },
+  1379→    { view: 'phases' as const, icon: BookOpen, label: 'Jornada' },
+  1380→    { view: 'nutrition' as const, icon: Utensils, label: 'Nutrição' },
+  1381→    { view: 'achievements' as const, icon: Trophy, label: 'Conquistas' },
+  1382→    { view: 'profile' as const, icon: User, label: 'Perfil' },
+  1383→  ];
+  1384→  
+  1385→  return (
+  1386→    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+  1387→      <div className="flex justify-around items-center py-2 max-w-lg mx-auto">
+  1388→        {navItems.map((item) => (
+  1389→          <button key={item.view} onClick={() => setCurrentView(item.view)}
+  1390→            className={`flex flex-col items-center px-4 py-2 rounded-xl transition-all ${currentView === item.view ? 'text-green-600' : 'text-gray-400'}`}>
+  1391→            <item.icon className="h-6 w-6" />
+  1392→            <span className="text-xs mt-1">{item.label}</span>
+  1393→          </button>
+  1394→        ))}
+  1395→      </div>
+  1396→    </div>
+  1397→  );
+  1398→}
+  1399→
+  1400→// ============================================
+  1401→// PHASES SCREEN (JORNADA)
+  1402→// ============================================
+  1403→function PhasesScreen() {
+  1404→  const { currentView, setCurrentView, selectedPhase, setSelectedPhase } = useAppStore();
+  1405→  const [userProgress, setUserProgress] = useState<UserProgress>(() => {
+  1406→    if (typeof window !== 'undefined') {
+  1407→      const saved = localStorage.getItem('quebrando-ciclo-progress');
+  1408→      if (saved) return JSON.parse(saved);
+  1409→    }
+  1410→    return {
+  1411→      phase1Lessons: [],
+  1412→      phase2Lessons: [],
+  1413→      phase3Lessons: [],
+  1414→      phase4Lessons: [],
+  1415→      exerciseAnswers: {},
+  1416→    };
+  1417→  });
+  1418→  // Lesson detail state - always declared at top level
+  1419→  const [currentLesson, setCurrentLesson] = useState(0);
+  1420→  const [answers, setAnswers] = useState<Record<number, string>>({});
+  1421→  const [showExercises, setShowExercises] = useState(false);
+  1422→  const [lessonComplete, setLessonComplete] = useState(false);
+  1423→  const [showConfetti, setShowConfetti] = useState(false);
+  1424→
+  1425→  const saveProgress = (newProgress: UserProgress) => {
+  1426→    setUserProgress(newProgress);
+  1427→    localStorage.setItem('quebrando-ciclo-progress', JSON.stringify(newProgress));
+  1428→  };
+  1429→
+  1430→  // Get current phase
+  1431→  const phase = selectedPhase > 0 ? journeyPhases.find(p => p.id === selectedPhase) : null;
+  1432→  const lesson = phase?.lessons[currentLesson];
+  1433→  const completedLessons = phase ? (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [] : [];
+  1434→  const isLessonComplete = lesson ? completedLessons.includes(lesson.id) : false;
+  1435→
+  1436→  // Calculate saved answers using useMemo (avoids setState in effect)
+  1437→  const initialAnswers = useMemo(() => {
+  1438→    if (!phase || !lesson) return {};
+  1439→    const saved: Record<number, string> = {};
+  1440→    lesson.exercises.forEach((_, i) => {
+  1441→      const key = `phase${phase.id}_lesson${lesson.id}_ex${i}`;
+  1442→      if (userProgress.exerciseAnswers[key]) {
+  1443→        saved[i] = userProgress.exerciseAnswers[key];
+  1444→      }
+  1445→    });
+  1446→    return saved;
+  1447→  }, [phase, lesson, userProgress.exerciseAnswers]);
+  1448→
+  1449→  // Update answers when initialAnswers changes
+  1450→  useEffect(() => {
+  1451→    setAnswers(initialAnswers);
+  1452→  }, [initialAnswers]);
+  1453→
+  1454→  // Lesson Detail View
+  1455→  if (selectedPhase > 0 && phase) {
+  1456→    const completeLesson = () => {
+  1457→      if (!lesson) return;
+  1458→      // Save progress
+  1459→      const newProgress = { ...userProgress };
+  1460→      const phaseKey = `phase${phase.id}Lessons` as keyof UserProgress;
+  1461→      if (!newProgress[phaseKey].includes(lesson.id)) {
+  1462→        (newProgress[phaseKey] as number[]).push(lesson.id);
+  1463→      }
+  1464→      // Save answers
+  1465→      Object.entries(answers).forEach(([index, answer]) => {
+  1466→        const key = `phase${phase.id}_lesson${lesson.id}_ex${index}`;
+  1467→        newProgress.exerciseAnswers[key] = answer;
+  1468→      });
+  1469→      saveProgress(newProgress);
+  1470→      
+  1471→      setShowConfetti(true);
+  1472→      setLessonComplete(true);
+  1473→      setTimeout(() => setShowConfetti(false), 3000);
+  1474→    };
+  1475→
+  1476→    const goToNextLesson = () => {
+  1477→      if (!phase) return;
+  1478→      if (currentLesson < phase.lessons.length - 1) {
+  1479→        setCurrentLesson(currentLesson + 1);
+  1480→        setShowExercises(false);
+  1481→        setLessonComplete(false);
+  1482→        setAnswers({});
+  1483→      } else {
+  1484→        setSelectedPhase(0);
+  1485→        setCurrentLesson(0);
+  1486→      }
+  1487→    };
+  1488→
+  1489→    return (
+  1490→      <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1491→        <Confetti show={showConfetti} />
+  1492→        
+  1493→        {/* Header */}
+  1494→        <div className={`bg-gradient-to-r ${phase.color} text-white p-5 rounded-b-3xl`}>
+  1495→          <button onClick={() => setSelectedPhase(0)} className="flex items-center text-white/80 mb-3">
+  1496→            <ChevronLeft className="h-5 w-5" /> Voltar
+  1497→          </button>
+  1498→          <div className="flex items-center gap-3">
+  1499→            <span className="text-3xl">{phase.emoji}</span>
+  1500→            <div>
+  1501→              <h1 className="text-xl font-bold">{phase.title}</h1>
+  1502→              <p className="text-white/80 text-sm">Lição {currentLesson + 1} de {phase.lessons.length}</p>
+  1503→            </div>
+  1504→          </div>
+  1505→          <div className="mt-4">
+  1506→            <Progress value={(completedLessons.length / phase.lessons.length) * 100} className="h-2 bg-white/20" />
+  1507→          </div>
+  1508→        </div>
+  1509→
+  1510→        {/* Lesson Progress Pills */}
+  1511→        <div className="p-3 overflow-x-auto">
+  1512→          <div className="flex gap-2">
+  1513→            {phase.lessons.map((l, i) => (
+  1514→              <button
+  1515→                key={l.id}
+  1516→                onClick={() => { setCurrentLesson(i); setShowExercises(false); setLessonComplete(false); }}
+  1517→                className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+  1518→                  currentLesson === i 
+  1519→                    ? `bg-gradient-to-r ${phase.color} text-white shadow-md` 
+  1520→                    : completedLessons.includes(l.id)
+  1521→                      ? 'bg-green-100 text-green-700'
+  1522→                      : 'bg-white text-gray-600 shadow-sm'
+  1523→                }`}
+  1524→              >
+  1525→                {completedLessons.includes(l.id) && currentLesson !== i ? '✓' : ''} {l.title}
+  1526→              </button>
+  1527→            ))}
+  1528→          </div>
+  1529→        </div>
+  1530→
+  1531→        {lesson && (
+  1532→          <div className="p-4 space-y-4">
+  1533→            {/* Content */}
+  1534→            <Card className="shadow-md">
+  1535→              <CardContent className="p-5">
+  1536→                <h2 className="text-xl font-bold text-gray-800 mb-4">{lesson.title}</h2>
+  1537→                <div className="prose prose-sm max-w-none">
+  1538→                  {lesson.content.split('\n').map((line, i) => (
+  1539→                    <p key={i} className="mb-2 text-gray-700 leading-relaxed">{line}</p>
+  1540→                  ))}
+  1541→                </div>
+  1542→              </CardContent>
+  1543→            </Card>
+  1544→
+  1545→            {/* Show Exercises Button */}
+  1546→            {!showExercises && lesson.exercises.length > 0 && (
+  1547→              <Button 
+  1548→                onClick={() => setShowExercises(true)} 
+  1549→                className={`w-full h-14 bg-gradient-to-r ${phase.color} rounded-xl text-lg font-semibold shadow-lg`}
+  1550→              >
+  1551→                <Edit3 className="mr-2 h-5 w-5" /> Fazer Exercícios (+{lesson.xp} XP)
+  1552→              </Button>
+  1553→            )}
+  1554→
+  1555→            {/* Exercises */}
+  1556→            {showExercises && !lessonComplete && (
+  1557→              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+  1558→                <Card className="bg-amber-50 border-amber-200">
+  1559→                  <CardContent className="p-4">
+  1560→                    <h3 className="font-semibold text-amber-800 mb-2">📝 Exercícios de Reflexão</h3>
+  1561→                    <p className="text-sm text-amber-700">Responda às perguntas abaixo para completar esta lição.</p>
+  1562→                  </CardContent>
+  1563→                </Card>
+  1564→
+  1565→                {lesson.exercises.map((exercise, index) => (
+  1566→                  <Card key={index} className="shadow-md">
+  1567→                    <CardContent className="p-4">
+  1568→                      <Label className="text-gray-800 font-medium">{index + 1}. {exercise.question}</Label>
+  1569→                      <Textarea
+  1570→                        value={answers[index] || ''}
+  1571→                        onChange={(e) => setAnswers({ ...answers, [index]: e.target.value })}
+  1572→                        placeholder={exercise.placeholder}
+  1573→                        className="mt-2 min-h-[100px]"
+  1574→                      />
+  1575→                    </CardContent>
+  1576→                  </Card>
+  1577→                ))}
+  1578→
+  1579→                <Button 
+  1580→                  onClick={completeLesson}
+  1581→                  disabled={lesson.exercises.some((_, i) => !answers[i]?.trim())}
+  1582→                  className={`w-full h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-lg font-semibold shadow-lg`}
+  1583→                >
+  1584→                  <Check className="mr-2 h-5 w-5" /> Completar Lição (+{lesson.xp} XP)
+  1585→                </Button>
+  1586→              </motion.div>
+  1587→            )}
+  1588→
+  1589→            {/* Lesson Complete */}
+  1590→            {lessonComplete && (
+  1591→              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+  1592→                <Card className="bg-green-50 border-green-200">
+  1593→                  <CardContent className="p-6 text-center">
+  1594→                    <div className="text-5xl mb-4">🎉</div>
+  1595→                    <h3 className="text-xl font-bold text-green-800 mb-2">Lição Concluída!</h3>
+  1596→                    <p className="text-green-700 mb-4">Você ganhou +{lesson.xp} XP</p>
+  1597→                    <div className="flex gap-3">
+  1598→                      <Button onClick={goToNextLesson} className="flex-1 bg-green-500 hover:bg-green-600">
+  1599→                        {currentLesson < phase.lessons.length - 1 ? 'Próxima Lição' : 'Voltar à Jornada'}
+  1600→                      </Button>
+  1601→                    </div>
+  1602→                  </CardContent>
+  1603→                </Card>
+  1604→              </motion.div>
+  1605→            )}
+  1606→
+  1607→            {/* Skip for lessons without exercises */}
+  1608→            {!showExercises && lesson.exercises.length === 0 && (
+  1609→              <Button onClick={goToNextLesson} className={`w-full h-14 bg-gradient-to-r ${phase.color} rounded-xl font-semibold shadow-lg`}>
+  1610→                Continuar <ChevronRight className="ml-2 h-5 w-5" />
+  1611→              </Button>
+  1612→            )}
+  1613→          </div>
+  1614→        )}
+  1615→
+  1616→        <BottomNav />
+  1617→      </motion.div>
+  1618→    );
+  1619→  }
+  1620→
+  1621→  // Phase List View
+  1622→  return (
+  1623→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1624→      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-b-3xl">
+  1625→        <h1 className="text-2xl font-bold">📍 Sua Jornada</h1>
+  1626→        <p className="text-green-100 mt-1">Do ponto A ao ponto B</p>
+  1627→      </div>
+  1628→
+  1629→      <div className="p-4 space-y-4">
+  1630→        {journeyPhases.map((phase) => {
+  1631→          const completedLessons = (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [];
+  1632→          const isComplete = completedLessons.length === phase.lessons.length && phase.lessons.length > 0;
+  1633→          const isInProgress = completedLessons.length > 0;
+  1634→
+  1635→          return (
+  1636→            <Card 
+  1637→              key={phase.id}
+  1638→              className={`shadow-md cursor-pointer active:scale-[0.99] transition-transform ${isComplete ? 'bg-green-50 border-green-200' : ''}`}
+  1639→              onClick={() => phase.lessons.length > 0 && setSelectedPhase(phase.id)}
+  1640→            >
+  1641→              <CardContent className="p-4">
+  1642→                <div className="flex items-center gap-4">
+  1643→                  <div className={`w-16 h-16 bg-gradient-to-r ${phase.color} rounded-2xl flex items-center justify-center text-3xl shadow-md ${phase.lessons.length === 0 ? 'opacity-50' : ''}`}>
+  1644→                    {isComplete ? '✅' : phase.emoji}
+  1645→                  </div>
+  1646→                  <div className="flex-1">
+  1647→                    <div className="flex items-center gap-2 mb-1">
+  1648→                      <span className="text-xs font-bold text-gray-400">FASE {phase.id}</span>
+  1649→                      {isInProgress && !isComplete && (
+  1650→                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Em progresso</span>
+  1651→                      )}
+  1652→                      {isComplete && (
+  1653→                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Completo</span>
+  1654→                      )}
+  1655→                    </div>
+  1656→                    <h3 className="font-bold text-gray-800">{phase.title}</h3>
+  1657→                    <p className="text-sm text-gray-500">{phase.description}</p>
+  1658→                    {phase.lessons.length > 0 && (
+  1659→                      <div className="flex items-center gap-2 mt-2">
+  1660→                        <Progress value={(completedLessons.length / phase.lessons.length) * 100} className="h-1.5 flex-1" />
+  1661→                        <span className="text-xs text-gray-400">{completedLessons.length}/{phase.lessons.length}</span>
+  1662→                      </div>
+  1663→                    )}
+  1664→                  </div>
+  1665→                  <ChevronRight className="h-6 w-6 text-gray-400" />
+  1666→                </div>
+  1667→              </CardContent>
+  1668→            </Card>
+  1669→          );
+  1670→        })}
+  1671→      </div>
+  1672→
+  1673→      <BottomNav />
+  1674→    </motion.div>
+  1675→  );
+  1676→}
+  1677→
+  1678→// ============================================
+  1679→// NUTRITION SCREEN - HUB DE NUTRIÇÃO
+  1680→// ============================================
+  1681→function NutritionScreen() {
+  1682→  const { setCurrentView, setSelectedRecipe, setSelectedJuice, addFavorite, removeFavoriteByItem, isFavorite } = useAppStore();
+  1683→  const [selectedTab, setSelectedTab] = useState<'receitas' | 'sucos'>('receitas');
+  1684→  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  1685→  const [searchQuery, setSearchQuery] = useState('');
+  1686→
+  1687→  const categoryLabels: Record<string, string> = {
+  1688→    cafe_salgado: '🍳 Café Salgado',
+  1689→    cafe_doce: '🥞 Café Doce',
+  1690→    principal: '🍽️ Principal',
+  1691→    lanche_salgado: '🥪 Lanche Salgado',
+  1692→    lanche_doce: '🍰 Lanche Doce',
+  1693→  };
+  1694→
+  1695→  const categories = [...new Set(recipesData.map(r => r.category))];
+  1696→  
+  1697→  const filteredRecipes = recipesData.filter(r => {
+  1698→    const matchesCategory = !selectedCategory || r.category === selectedCategory;
+  1699→    const matchesSearch = !searchQuery || 
+  1700→      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1701→      r.description.toLowerCase().includes(searchQuery.toLowerCase());
+  1702→    return matchesCategory && matchesSearch;
+  1703→  });
+  1704→
+  1705→  const filteredJuices = juicesData.filter(j => {
+  1706→    const matchesSearch = !searchQuery || 
+  1707→      j.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1708→      j.description.toLowerCase().includes(searchQuery.toLowerCase());
+  1709→    return matchesSearch;
+  1710→  });
+  1711→
+  1712→  const toggleRecipeFavorite = (recipeId: string, e: React.MouseEvent) => {
+  1713→    e.stopPropagation();
+  1714→    if (isFavorite(recipeId, undefined)) {
+  1715→      removeFavoriteByItem(recipeId, undefined);
+  1716→    } else {
+  1717→      addFavorite({ recipeId });
+  1718→    }
+  1719→  };
+  1720→
+  1721→  const toggleJuiceFavorite = (juiceId: string, e: React.MouseEvent) => {
+  1722→    e.stopPropagation();
+  1723→    if (isFavorite(undefined, juiceId)) {
+  1724→      removeFavoriteByItem(undefined, juiceId);
+  1725→    } else {
+  1726→      addFavorite({ juiceId });
+  1727→    }
+  1728→  };
+  1729→
+  1730→  const getDifficultyColor = (difficulty: string) => {
+  1731→    switch (difficulty) {
+  1732→      case 'facil': return 'bg-green-100 text-green-700';
+  1733→      case 'medio': return 'bg-yellow-100 text-yellow-700';
+  1734→      case 'dificil': return 'bg-red-100 text-red-700';
+  1735→      default: return 'bg-gray-100 text-gray-700';
+  1736→    }
+  1737→  };
+  1738→
+  1739→  return (
+  1740→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1741→      {/* Header */}
+  1742→      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-5 rounded-b-3xl">
+  1743→        <h1 className="text-2xl font-bold flex items-center gap-2">
+  1744→          <Utensils className="h-6 w-6" />
+  1745→          Nutrição
+  1746→        </h1>
+  1747→        <p className="text-green-100 mt-1 text-sm">Receitas e Sucos Detox</p>
+  1748→        
+  1749→        {/* Search */}
+  1750→        <div className="relative mt-4">
+  1751→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-green-300" />
+  1752→          <Input
+  1753→            value={searchQuery}
+  1754→            onChange={(e) => setSearchQuery(e.target.value)}
+  1755→            placeholder="Buscar receitas ou sucos..."
+  1756→            className="pl-10 h-11 bg-white/20 border-0 text-white placeholder:text-green-200 rounded-xl"
+  1757→          />
+  1758→          {searchQuery && (
+  1759→            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+  1760→              <X className="h-5 w-5 text-green-200" />
+  1761→            </button>
+  1762→          )}
+  1763→        </div>
+  1764→      </div>
+  1765→
+  1766→      {/* Tabs */}
+  1767→      <div className="p-3 flex gap-2">
+  1768→        <button 
+  1769→          onClick={() => { setSelectedTab('receitas'); setSelectedCategory(null); }}
+  1770→          className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${selectedTab === 'receitas' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}
+  1771→        >
+  1772→          <ChefHat className="h-5 w-5" />
+  1773→          Receitas ({filteredRecipes.length})
+  1774→        </button>
+  1775→        <button 
+  1776→          onClick={() => setSelectedTab('sucos')}
+  1777→          className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${selectedTab === 'sucos' ? 'bg-lime-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}
+  1778→        >
+  1779→          <GlassWater className="h-5 w-5" />
+  1780→          Sucos ({filteredJuices.length})
+  1781→        </button>
+  1782→      </div>
+  1783→
+  1784→      {/* Content */}
+  1785→      {selectedTab === 'receitas' ? (
+  1786→        <>
+  1787→          {/* Categories */}
+  1788→          <div className="px-3 overflow-x-auto">
+  1789→            <div className="flex gap-2 pb-2">
+  1790→              <button onClick={() => setSelectedCategory(null)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${!selectedCategory ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>Todas</button>
+  1791→              {categories.map((cat) => (
+  1792→                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{categoryLabels[cat] || cat}</button>
+  1793→              ))}
+  1794→            </div>
+  1795→          </div>
+  1796→
+  1797→          {/* Recipes Grid */}
+  1798→          <div className="p-3 grid grid-cols-2 gap-3">
+  1799→            <AnimatePresence mode="popLayout">
+  1800→              {filteredRecipes.map((recipe, index) => {
+  1801→                const isFav = isFavorite(recipe.id, undefined);
+  1802→                return (
+  1803→                  <motion.div
+  1804→                    key={recipe.id}
+  1805→                    layout
+  1806→                    initial={{ opacity: 0, scale: 0.9 }}
+  1807→                    animate={{ opacity: 1, scale: 1 }}
+  1808→                    exit={{ opacity: 0, scale: 0.9 }}
+  1809→                    transition={{ delay: index * 0.02 }}
+  1810→                  >
+  1811→                    <Card 
+  1812→                      className="shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform bg-white border border-gray-100 hover:shadow-md" 
+  1813→                      onClick={() => { setSelectedRecipe(recipe.id); setCurrentView('recipe-detail'); }}
+  1814→                    >
+  1815→                      <div className="h-20 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-3xl relative">
+  1816→                        <span>{recipe.category.includes('cafe') ? '🥐' : recipe.category.includes('principal') ? '🍽️' : recipe.category.includes('lanche_doce') ? '🍰' : '🥪'}</span>
+  1817→                        <button 
+  1818→                          onClick={(e) => toggleRecipeFavorite(recipe.id, e)} 
+  1819→                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-red-100 text-red-500' : 'bg-white/80 text-gray-400'}`}
+  1820→                        >
+  1821→                          <Heart className={`h-3.5 w-3.5 ${isFav ? 'fill-current' : ''}`} />
+  1822→                        </button>
+  1823→                      </div>
+  1824→                      <CardContent className="p-3">
+  1825→                        <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-2">{recipe.name}</h3>
+  1826→                        <div className="flex items-center justify-between">
+  1827→                          <div className="flex items-center gap-2 text-xs text-gray-500">
+  1828→                            <div className="flex items-center gap-1">
+  1829→                              <Flame className="h-3 w-3 text-orange-500" />
+  1830→                              <span>{recipe.calories}</span>
+  1831→                            </div>
+  1832→                            <div className="flex items-center gap-1">
+  1833→                              <Clock className="h-3 w-3 text-blue-500" />
+  1834→                              <span>{recipe.prepTime}m</span>
+  1835→                            </div>
+  1836→                          </div>
+  1837→                          <span className={`text-xs px-2 py-0.5 rounded-full ${getDifficultyColor(recipe.difficulty || 'facil')}`}>
+  1838→                            {recipe.difficulty === 'facil' ? 'Fácil' : recipe.difficulty === 'medio' ? 'Médio' : 'Difícil'}
+  1839→                          </span>
+  1840→                        </div>
+  1841→                      </CardContent>
+  1842→                    </Card>
+  1843→                  </motion.div>
+  1844→                );
+  1845→              })}
+  1846→            </AnimatePresence>
+  1847→          </div>
+  1848→          
+  1849→          {filteredRecipes.length === 0 && (
+  1850→            <div className="text-center py-12">
+  1851→              <ChefHat className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+  1852→              <p className="text-gray-500">Nenhuma receita encontrada</p>
+  1853→            </div>
+  1854→          )}
+  1855→        </>
+  1856→      ) : (
+  1857→        /* Juices List */
+  1858→        <div className="p-3 space-y-3">
+  1859→          <AnimatePresence mode="popLayout">
+  1860→            {filteredJuices.map((juice, index) => {
+  1861→              const isFav = isFavorite(undefined, juice.id);
+  1862→              return (
+  1863→                <motion.div
+  1864→                  key={juice.id}
+  1865→                  layout
+  1866→                  initial={{ opacity: 0, x: -20 }}
+  1867→                  animate={{ opacity: 1, x: 0 }}
+  1868→                  exit={{ opacity: 0, x: 20 }}
+  1869→                  transition={{ delay: index * 0.03 }}
+  1870→                >
+  1871→                  <Card 
+  1872→                    className="shadow-sm cursor-pointer active:scale-[0.99] transition-transform bg-white border border-gray-100 hover:shadow-md" 
+  1873→                    onClick={() => { setSelectedJuice(juice.id); setCurrentView('juice-detail'); }}
+  1874→                  >
+  1875→                    <CardContent className="p-4">
+  1876→                      <div className="flex items-center gap-4">
+  1877→                        <div className="w-14 h-14 bg-gradient-to-br from-lime-50 to-green-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🥤</div>
+  1878→                        <div className="flex-1 min-w-0">
+  1879→                          <h3 className="font-semibold text-gray-800">{juice.name}</h3>
+  1880→                          <p className="text-sm text-gray-500 line-clamp-1">{juice.description}</p>
+  1881→                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+  1882→                            <Clock className="h-3 w-3" />
+  1883→                            <span>{juice.prepTime} min</span>
+  1884→                            <span>•</span>
+  1885→                            <span>{juice.benefits.length} benefícios</span>
+  1886→                          </div>
+  1887→                        </div>
+  1888→                        <button 
+  1889→                          onClick={(e) => toggleJuiceFavorite(juice.id, e)} 
+  1890→                          className={`p-2 flex-shrink-0 rounded-full transition-all ${isFav ? 'text-red-500 bg-red-50' : 'text-gray-300 hover:text-red-400'}`}
+  1891→                        >
+  1892→                          <Heart className={`h-5 w-5 ${isFav ? 'fill-current' : ''}`} />
+  1893→                        </button>
+  1894→                      </div>
+  1895→                    </CardContent>
+  1896→                  </Card>
+  1897→                </motion.div>
+  1898→              );
+  1899→            })}
+  1900→          </AnimatePresence>
+  1901→          
+  1902→          {filteredJuices.length === 0 && (
+  1903→            <div className="text-center py-12">
+  1904→              <GlassWater className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+  1905→              <p className="text-gray-500">Nenhum suco encontrado</p>
+  1906→            </div>
+  1907→          )}
+  1908→        </div>
+  1909→      )}
+  1910→      <BottomNav />
+  1911→    </motion.div>
+  1912→  );
+  1913→}
+  1914→
+  1915→// ============================================
+  1916→// RECIPES SCREEN - DADOS LOCAIS
+  1917→// ============================================
+  1918→function RecipesScreen() {
+  1919→  const { setCurrentView, setSelectedRecipe } = useAppStore();
+  1920→  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  1921→  const [favorites, setFavorites] = useState<string[]>([]);
+  1922→
+  1923→  const categoryLabels: Record<string, string> = {
+  1924→    cafe_salgado: 'Café Salgado',
+  1925→    cafe_doce: 'Café Doce',
+  1926→    principal: 'Principal',
+  1927→    lanche_salgado: 'Lanche Salgado',
+  1928→    lanche_doce: 'Lanche Doce',
+  1929→  };
+  1930→
+  1931→  // Usar dados locais
+  1932→  const recipes = recipesData.map(r => ({ ...r, isFavorite: favorites.includes(r.id) }));
+  1933→  const categories = [...new Set(recipes.map(r => r.category))];
+  1934→  const filteredRecipes = selectedCategory ? recipes.filter(r => r.category === selectedCategory) : recipes;
+  1935→
+  1936→  const toggleFavorite = (recipeId: string) => {
+  1937→    if (favorites.includes(recipeId)) {
+  1938→      setFavorites(favorites.filter(id => id !== recipeId));
+  1939→    } else {
+  1940→      setFavorites([...favorites, recipeId]);
+  1941→    }
+  1942→  };
+  1943→
+  1944→  return (
+  1945→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1946→      <div className="bg-gradient-to-r from-orange-400 to-orange-500 text-white p-5 rounded-b-3xl">
+  1947→        <h1 className="text-2xl font-bold">Receitas Saudáveis 🍳</h1>
+  1948→        <p className="text-orange-100 mt-1 text-sm">30 receitas entre 250-400 kcal</p>
+  1949→      </div>
+  1950→      
+  1951→      {categories.length > 0 && (
+  1952→        <div className="p-3 overflow-x-auto">
+  1953→          <div className="flex gap-2 pb-1">
+  1954→            <button onClick={() => setSelectedCategory(null)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${!selectedCategory ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>Todas</button>
+  1955→            {categories.map((cat) => (
+  1956→              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{categoryLabels[cat] || cat}</button>
+  1957→            ))}
+  1958→          </div>
+  1959→        </div>
+  1960→      )}
+  1961→      
+  1962→      <div className="p-3 grid grid-cols-2 gap-3">
+  1963→        {filteredRecipes.map((recipe) => (
+  1964→          <Card key={recipe.id} className="shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform bg-white border border-gray-100" onClick={() => { setSelectedRecipe(recipe.id); setCurrentView('recipe-detail'); }}>
+  1965→            <div className="h-24 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center text-4xl">
+  1966→              {recipe.category.includes('cafe') ? '🥐' : recipe.category.includes('principal') ? '🍽️' : recipe.category.includes('lanche_doce') ? '🍰' : '🥪'}
+  1967→            </div>
+  1968→            <CardContent className="p-3">
+  1969→              <h3 className="font-medium text-sm line-clamp-2 leading-tight">{recipe.name}</h3>
+  1970→              <div className="flex items-center justify-between mt-2">
+  1971→                <span className="text-xs text-gray-500">{recipe.calories} kcal</span>
+  1972→                <button onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe.id); }} className="p-1"><Heart className={`h-4 w-4 ${recipe.isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} /></button>
+  1973→              </div>
+  1974→            </CardContent>
+  1975→          </Card>
+  1976→        ))}
+  1977→      </div>
+  1978→      <BottomNav />
+  1979→    </motion.div>
+  1980→  );
+  1981→}
+  1982→
+  1983→// ============================================
+  1984→// JUICES SCREEN - DADOS LOCAIS
+  1985→// ============================================
+  1986→function JuicesScreen() {
+  1987→  const { setCurrentView, setSelectedJuice } = useAppStore();
+  1988→  const [favorites, setFavorites] = useState<string[]>([]);
+  1989→
+  1990→  // Usar dados locais
+  1991→  const juices = juicesData.map(j => ({ ...j, isFavorite: favorites.includes(j.id) }));
+  1992→
+  1993→  const toggleFavorite = (juiceId: string) => {
+  1994→    if (favorites.includes(juiceId)) {
+  1995→      setFavorites(favorites.filter(id => id !== juiceId));
+  1996→    } else {
+  1997→      setFavorites([...favorites, juiceId]);
+  1998→    }
+  1999→  };
+  2000→
+  2001→  return (
+  2002→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  2003→      <div className="bg-gradient-to-r from-lime-400 to-lime-500 text-white p-5 rounded-b-3xl">
+  2004→        <h1 className="text-2xl font-bold">Sucos Detox 🥤</h1>
+  2005→        <p className="text-lime-100 mt-1 text-sm">10 receitas nutritivas</p>
+  2006→      </div>
+  2007→      
+  2008→      <div className="p-3 space-y-3">
+  2009→        {juices.map((juice) => (
+  2010→          <Card key={juice.id} className="shadow-sm cursor-pointer active:scale-[0.99] transition-transform bg-white border border-gray-100" onClick={() => { setSelectedJuice(juice.id); setCurrentView('juice-detail'); }}>
+  2011→            <CardContent className="p-4">
+  2012→              <div className="flex items-center gap-4">
+  2013→                <div className="w-14 h-14 bg-gradient-to-br from-lime-50 to-lime-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🥤</div>
+  2014→                <div className="flex-1 min-w-0">
+  2015→                  <h3 className="font-semibold text-gray-800">{juice.name}</h3>
+  2016→                  <p className="text-sm text-gray-500 line-clamp-1">{juice.description}</p>
+  2017→                </div>
+  2018→                <button onClick={(e) => { e.stopPropagation(); toggleFavorite(juice.id); }} className="p-2 flex-shrink-0"><Heart className={`h-5 w-5 ${juice.isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} /></button>
+  2019→              </div>
+  2020→            </CardContent>
+  2021→          </Card>
+  2022→        ))}
+  2023→      </div>
+  2024→      <BottomNav />
+  2025→    </motion.div>
+  2026→  );
+  2027→}
+  2028→
+  2029→// ============================================
+  2030→// MEAL PLAN SCREEN
+  2031→// ============================================
+  2032→function MealPlanScreen() {
+  2033→  const { setCurrentView } = useAppStore();
+  2034→  const [selectedMeal, setSelectedMeal] = useState<'cafe_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'>('cafe_manha');
+  2035→  const [showSubstitutions, setShowSubstitutions] = useState<string | null>(null);
+  2036→  const [showGuidelines, setShowGuidelines] = useState(false);
+  2037→
+  2038→  const mealOrder = ['cafe_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia'] as const;
+  2039→  const currentMeal = completeMealPlan[selectedMeal];
+  2040→
+  2041→  const nutritionalGuidelines = [
+  2042→    { icon: '⏰', title: 'Intervalo entre refeições', desc: 'Estabeleça cerca de 3 horas entre uma refeição e outra' },
+  2043→    { icon: '⚖️', title: 'Pese os alimentos', desc: 'Use uma balança digital para pesagem correta' },
+  2044→    { icon: '😴', title: 'Sono regular', desc: 'Tente ter um sono regular de 7-8 horas por dia' },
+  2045→    { icon: '🚫', title: 'Proibido', desc: 'Açúcares, balas, doces, sucos de polpa e refrigerantes comuns' },
+  2046→    { icon: '✅', title: 'Permitido', desc: 'Café, adoçante (Sucralose), Refrigerante Zero, Suco sem açúcar' },
+  2047→    { icon: '🍳', title: 'Preparação', desc: 'Evite óleos. Use frigideira antiaderente ou azeite leve' },
+  2048→    { icon: '🧂', title: 'Temperos naturais', desc: 'Alho, cebola, pimentão, orégano, chimichurri, páprica' },
+  2049→    { icon: '⚠️', title: 'Sem temperos artificiais', desc: 'Não use Arisco, Sazon ou produtos com aditivos' },
+  2050→    { icon: '📅', title: 'Duração', desc: 'A dieta tem duração de 30 dias. Consulte seu nutricionista após' },
+  2051→  ];
+  2052→
+  2053→  return (
+  2054→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  2055→      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-5 rounded-b-3xl">
+  2056→        <button onClick={() => setCurrentView('dashboard')} className="flex items-center text-white/80 mb-3"><ChevronLeft className="h-5 w-5" /> Voltar</button>
+  2057→        <h1 className="text-2xl font-bold">Plano Alimentar 1500 kcal 📋</h1>
+  2058→        <p className="text-green-100 mt-1 text-sm">Nutricionista Natalia Cavalcante</p>
+  2059→      </div>
+  2060→
+  2061→      {/* Water Tip */}
+  2062→      <div className="p-3">
+  2063→        <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200 shadow-sm">
+  2064→          <CardContent className="p-3">
+  2065→            <div className="flex items-start gap-3">
+  2066→              <div className="text-2xl">💧</div>
+  2067→              <div>
+  2068→                <h3 className="font-semibold text-blue-800 text-sm">Antes de tudo, beba ÁGUA!</h3>
+  2069→                <p className="text-xs text-blue-700 mt-1"><strong>Cálculo:</strong> Seu peso × 35 = ml de água por dia</p>
+  2070→              </div>
+  2071→            </div>
+  2072→          </CardContent>
+  2073→        </Card>
+  2074→      </div>
+  2075→
+  2076→      {/* Meal Tabs */}
+  2077→      <div className="p-3 overflow-x-auto">
+  2078→        <div className="flex gap-2">
+  2079→          {mealOrder.map((mealKey) => {
+  2080→            const meal = completeMealPlan[mealKey];
+  2081→            return (
+  2082→              <button key={mealKey} onClick={() => setSelectedMeal(mealKey)}
+  2083→                className={`flex items-center gap-1 px-3 py-2 rounded-xl whitespace-nowrap transition-all text-sm ${
+  2084→                  selectedMeal === mealKey ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'
+  2085→                }`}>
+  2086→                <span className="text-lg">{meal.emoji}</span>
+  2087→                <span className="font-medium">{meal.title}</span>
+  2088→              </button>
+  2089→            );
+  2090→          })}
+  2091→        </div>
+  2092→      </div>
+  2093→
+  2094→      {/* Meal Content */}
+  2095→      <div className="p-3 space-y-3">
+  2096→        <Card className="shadow-sm">
+  2097→          <CardContent className="p-4">
+  2098→            <div className="flex items-center gap-3">
+  2099→              <span className="text-3xl">{currentMeal.emoji}</span>
+  2100→              <div>
+  2101→                <h2 className="text-lg font-bold text-gray-800">{currentMeal.title}</h2>
+  2102→                <p className="text-sm text-gray-500">{currentMeal.calories}</p>
+  2103→              </div>
+  2104→            </div>
+  2105→          </CardContent>
+  2106→        </Card>
+  2107→
+  2108→        {currentMeal.options.map((option, optIndex) => (
+  2109→          <Card key={optIndex} className="shadow-sm">
+  2110→            <CardContent className="p-4">
+  2111→              <div className="flex items-center gap-2 mb-3">
+  2112→                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm ${optIndex === 0 ? 'bg-green-500' : 'bg-orange-500'}`}>{optIndex + 1}</div>
+  2113→                <h3 className="font-semibold text-gray-800">{option.name}</h3>
+  2114→              </div>
+  2115→              <div className="space-y-2">
+  2116→                {option.items.map((item, itemIndex) => (
+  2117→                  <div key={itemIndex} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+  2118→                    <div className="flex items-center gap-2">
+  2119→                      <div className="w-2 h-2 rounded-full bg-green-400" />
+  2120→                      <span className="text-gray-700 text-sm">{item.food}</span>
+  2121→                    </div>
+  2122→                    <span className="text-xs text-gray-500 font-medium">{item.amount}</span>
+  2123→                  </div>
+  2124→                ))}
+  2125→              </div>
+  2126→            </CardContent>
+  2127→          </Card>
+  2128→        ))}
+  2129→
+  2130→        {currentMeal.substitutions.length > 0 && (
+  2131→          <Card className="shadow-sm">
+  2132→            <CardContent className="p-4">
+  2133→              <button onClick={() => setShowSubstitutions(showSubstitutions === selectedMeal ? null : selectedMeal)} className="flex items-center justify-between w-full">
+  2134→                <div className="flex items-center gap-2">
+  2135→                  <span className="text-lg">🔄</span>
+  2136→                  <h3 className="font-semibold text-gray-800 text-sm">Opções de Substituição</h3>
+  2137→                </div>
+  2138→                <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${showSubstitutions === selectedMeal ? 'rotate-90' : ''}`} />
+  2139→              </button>
+  2140→              {showSubstitutions === selectedMeal && (
+  2141→                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="mt-3 space-y-2">
+  2142→                  {currentMeal.substitutions.map((sub, subIndex) => (
+  2143→                    <div key={subIndex} className="bg-gray-50 rounded-lg p-2">
+  2144→                      <p className="font-medium text-gray-700 text-xs mb-1"><span className="text-green-600">Trocar:</span> {sub.original}</p>
+  2145→                      <div className="flex flex-wrap gap-1">
+  2146→                        {sub.options.map((opt, optIndex) => (
+  2147→                          <span key={optIndex} className="px-2 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-600">{opt}</span>
+  2148→                        ))}
+  2149→                      </div>
+  2150→                    </div>
+  2151→                  ))}
+  2152→                </motion.div>
+  2153→              )}
+  2154→            </CardContent>
+  2155→          </Card>
+  2156→        )}
+  2157→      </div>
+  2158→
+  2159→      {/* Guidelines Toggle */}
+  2160→      <div className="px-3">
+  2161→        <Button onClick={() => setShowGuidelines(!showGuidelines)} className="w-full bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 shadow-sm text-sm">
+  2162→          <span className="mr-2">📖</span>{showGuidelines ? 'Ocultar' : 'Ver'} Orientações
+  2163→        </Button>
+  2164→      </div>
+  2165→
+  2166→      {showGuidelines && (
+  2167→        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="p-3 space-y-2">
+  2168→          {nutritionalGuidelines.map((guide, index) => (
+  2169→            <Card key={index} className="shadow-sm">
+  2170→              <CardContent className="p-3">
+  2171→                <div className="flex items-start gap-3">
+  2172→                  <span className="text-lg">{guide.icon}</span>
+  2173→                  <div>
+  2174→                    <h4 className="font-medium text-gray-800 text-sm">{guide.title}</h4>
+  2175→                    <p className="text-xs text-gray-600">{guide.desc}</p>
+  2176→                  </div>
+  2177→                </div>
+  2178→              </CardContent>
+  2179→            </Card>
+  2180→          ))}
+  2181→        </motion.div>
+  2182→      )}
+  2183→
+  2184→      <div className="p-3">
+  2185→        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md">
+  2186→          <CardContent className="p-4 text-center">
+  2187→            <p className="font-bold">Total diário: ~1500 kcal</p>
+  2188→            <p className="text-green-100 text-xs mt-1">Ajuste as porções conforme sua necessidade</p>
+  2189→          </CardContent>
+  2190→        </Card>
+  2191→      </div>
+  2192→
+  2193→      <BottomNav />
+  2194→    </motion.div>
+  2195→  );
+  2196→}
+  2197→
+  2198→// ============================================
+  2199→// WORKOUT SCREEN
+  2200→// ============================================
+  2201→function WorkoutScreen() {
+  2202→  const { setCurrentView } = useAppStore();
+  2203→  const [selectedDay, setSelectedDay] = useState<'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta'>('segunda');
+  2204→  const [completedExercises, setCompletedExercises] = useState<string[]>(() => {
+  2205→    if (typeof window !== 'undefined') {
+  2206→      const saved = localStorage.getItem('quebrando-ciclo-workout');
+  2207→      if (saved) return JSON.parse(saved);
+  2208→    }
+  2209→    return [];
+  2210→  });
+  2211→
+  2212→  const toggleExercise = (exerciseName: string) => {
+  2213→    const newCompleted = completedExercises.includes(exerciseName)
+  2214→      ? completedExercises.filter(e => e !== exerciseName)
+  2215→      : [...completedExercises, exerciseName];
+  2216→    setCompletedExercises(newCompleted);
+  2217→    localStorage.setItem('quebrando-ciclo-workout', JSON.stringify(newCompleted));
+  2218→  };
+  2219→
+  2220→  const dayOrder = ['segunda', 'terca', 'quarta', 'quinta', 'sexta'] as const;
+  2221→  const currentWorkout = workoutPlan[selectedDay];
+  2222→
+  2223→  return (
+  2224→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  2225→      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-5 rounded-b-3xl">
+  2226→        <button onClick={() => setCurrentView('dashboard')} className="flex items-center text-white/80 mb-3"><ChevronLeft className="h-5 w-5" /> Voltar</button>
+  2227→        <h1 className="text-2xl font-bold">Ficha de Treino 💪</h1>
+  2228→        <p className="text-purple-100 mt-1 text-sm">5 dias por semana</p>
+  2229→      </div>
+  2230→
+  2231→      {/* Day Selector */}
+  2232→      <div className="p-3 overflow-x-auto">
+  2233→        <div className="flex gap-2">
+  2234→          {dayOrder.map((day) => {
+  2235→            const dayLabels: Record<string, string> = { segunda: 'Seg', terca: 'Ter', quarta: 'Qua', quinta: 'Qui', sexta: 'Sex' };
+  2236→            return (
+  2237→              <button key={day} onClick={() => setSelectedDay(day)}
+  2238→                className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all text-sm font-medium ${
+  2239→                  selectedDay === day ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'
+  2240→                }`}>
+  2241→                {dayLabels[day]}
+  2242→              </button>
+  2243→            );
+  2244→          })}
+  2245→        </div>
+  2246→      </div>
+  2247→
+  2248→      {/* Workout Header */}
+  2249→      <div className="p-3">
+  2250→        <Card className={`shadow-md bg-gradient-to-r ${currentWorkout.color}`}>
+  2251→          <CardContent className="p-4">
+  2252→            <div className="flex items-center gap-3 text-white">
+  2253→              <span className="text-3xl">{currentWorkout.emoji}</span>
+  2254→              <div>
+  2255→                <h2 className="font-bold text-lg">{currentWorkout.title}</h2>
+  2256→                <p className="text-white/80 text-sm">{currentWorkout.exercises.length} exercícios</p>
+  2257→              </div>
+  2258→            </div>
+  2259→          </CardContent>
+  2260→        </Card>
+  2261→      </div>
+  2262→
+  2263→      {/* Exercises */}
+  2264→      <div className="p-3 space-y-2">
+  2265→        {currentWorkout.exercises.map((exercise, index) => {
+  2266→          const isComplete = completedExercises.includes(`${selectedDay}-${exercise.name}`);
+  2267→          return (
+  2268→            <Card 
+  2269→              key={index} 
+  2270→              className={`shadow-sm cursor-pointer transition-all ${isComplete ? 'bg-green-50 border-green-200' : 'bg-white'}`}
+  2271→              onClick={() => toggleExercise(`${selectedDay}-${exercise.name}`)}
+  2272→            >
+  2273→              <CardContent className="p-3">
+  2274→                <div className="flex items-center gap-3">
+  2275→                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+  2276→                    isComplete ? 'bg-green-500 text-white' : 'bg-purple-100 text-purple-600'
+  2277→                  }`}>
+  2278→                    {isComplete ? '✓' : index + 1}
+  2279→                  </div>
+  2280→                  <div className="flex-1">
+  2281→                    <h4 className="font-semibold text-gray-800 text-sm">{exercise.name}</h4>
+  2282→                    <div className="flex items-center gap-2 mt-1">
+  2283→                      <span className="text-xs text-purple-600 font-medium">{exercise.sets}</span>
+  2284→                      <span className="text-xs text-gray-400">•</span>
+  2285→                      <span className="text-xs text-gray-500">Descanso: {exercise.rest}</span>
+  2286→                    </div>
+  2287→                  </div>
+  2288→                </div>
+  2289→              </CardContent>
+  2290→            </Card>
+  2291→          );
+  2292→        })}
+  2293→      </div>
+  2294→
+  2295→      {/* Weekly Schedule */}
+  2296→      <div className="p-3">
+  2297→        <Card className="bg-blue-50 border-blue-200 shadow-sm">
+  2298→          <CardContent className="p-4">
+  2299→            <h4 className="font-semibold mb-2 text-blue-800">📅 Sugestão Semanal</h4>
+  2300→            <div className="text-sm text-blue-700 space-y-1">
+  2301→              <p><strong>Segunda:</strong> Quadríceps</p>
+  2302→              <p><strong>Terça:</strong> Costas e Bíceps</p>
+  2303→              <p><strong>Quarta:</strong> Posterior</p>
+  2304→              <p><strong>Quinta:</strong> Ombro e Tríceps</p>
+  2305→              <p><strong>Sexta:</strong> Glúteo</p>
+  2306→              <p className="text-blue-500 text-xs mt-2">Sábado/Domingo: Descanso ou caminhada leve</p>
+  2307→            </div>
+  2308→          </CardContent>
+  2309→        </Card>
+  2310→      </div>
+  2311→
+  2312→      <BottomNav />
+  2313→    </motion.div>
+  2314→  );
+  2315→}
+  2316→
+  2317→// ============================================
+  2318→// ACHIEVEMENTS SCREEN
+  2319→// ============================================
+  2320→function AchievementsScreen() {
+  2321→  const { user } = useAppStore();
+  2322→  const [showInfo, setShowInfo] = useState(false);
+  2323→  const [userProgress, setUserProgress] = useState<UserProgress>(() => {
+  2324→    if (typeof window !== 'undefined') {
+  2325→      const saved = localStorage.getItem('quebrando-ciclo-progress');
+  2326→      if (saved) return JSON.parse(saved);
+  2327→    }
+  2328→    return {
+  2329→      phase1Lessons: [],
+  2330→      phase2Lessons: [],
+  2331→      phase3Lessons: [],
+  2332→      phase4Lessons: [],
+  2333→      exerciseAnswers: {},
+  2334→    };
+  2335→  });
+  2336→
+  2337→  const totalLessons = journeyPhases.reduce((acc, p) => acc + p.lessons.length, 0);
+  2338→  const completedLessons = userProgress.phase1Lessons.length + userProgress.phase2Lessons.length + 
+  2339→                          userProgress.phase3Lessons.length + userProgress.phase4Lessons.length;
+  2340→
+  2341→  const achievements = [
+  2342→    { emoji: '🔥', name: 'Primeira Chama', desc: 'Complete 1 dia de sequência', requirement: '1 dia', unlocked: (user?.progress?.streak || 0) >= 1 },
+  2343→    { emoji: '🔥🔥', name: 'Semana Incansável', desc: 'Complete 7 dias seguidos', requirement: '7 dias', unlocked: (user?.progress?.streak || 0) >= 7 },
+  2344→    { emoji: '💧', name: 'Hidratado', desc: 'Bata a meta de água 1 dia', requirement: '1 dia', unlocked: false },
+  2345→    { emoji: '💧💧', name: 'Fonte de Vida', desc: 'Bata a meta de água por 7 dias', requirement: '7 dias', unlocked: false },
+  2346→    { emoji: '🧠', name: 'Mente Aberta', desc: 'Complete a Fase 1', requirement: 'Fase 1', unlocked: userProgress.phase1Lessons.length >= 4 },
+  2347→    { emoji: '🍽️', name: 'Consciência Alimentar', desc: 'Complete a Fase 3', requirement: 'Fase 3', unlocked: userProgress.phase3Lessons.length >= 3 },
+  2348→    { emoji: '🥗', name: 'Nutricionista', desc: 'Complete a Fase 4', requirement: 'Fase 4', unlocked: userProgress.phase4Lessons.length >= 1 },
+  2349→    { emoji: '🥑', name: 'Chef Saudável', desc: 'Favorite 5 receitas', requirement: '5 favoritos', unlocked: false },
+  2350→    { emoji: '🏆', name: 'Ciclo Quebrado', desc: 'Complete todas as fases', requirement: '100%', unlocked: completedLessons >= totalLessons && totalLessons > 0 },
+  2351→    { emoji: '📅', name: 'Consistência', desc: '30 dias de sequência', requirement: '30 dias', unlocked: (user?.progress?.streak || 0) >= 30 },
+  2352→    { emoji: '⭐', name: 'Meio Caminho', desc: 'Complete 50% das lições', requirement: '50%', unlocked: completedLessons >= totalLessons / 2 },
+  2353→  ];
+  2354→
+  2355→  const unlockedCount = achievements.filter(a => a.unlocked).length;
+  2356→
+  2357→  return (
+  2358→    <motion.div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24" {...fadeIn}>
+  2359→      <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-b-3xl">
+  2360→        <div className="flex items-center justify-between">
+  2361→          <div>
+  2362→            <h1 className="text-2xl font-bold flex items-center gap-2"><Trophy className="h-7 w-7" /> Conquistas</h1>
+  2363→            <p className="text-amber-100 mt-1">{unlockedCount} de {achievements.length} desbloqueadas</p>
+  2364→          </div>
+  2365→          <button 
+  2366→            onClick={() => setShowInfo(!showInfo)}
+  2367→            className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
+  2368→          >
+  2369→            <Info className="h-5 w-5" />
+  2370→          </button>
+  2371→        </div>
+  2372→        <Progress value={(unlockedCount / achievements.length) * 100} className="h-2 mt-3 bg-white/20" />
+  2373→      </div>
+  2374→
+  2375→      <div className="p-4 space-y-4">
+  2376→        {/* How Achievements Work - Info Card */}
+  2377→        <AnimatePresence>
+  2378→          {showInfo && (
+  2379→            <motion.div
+  2380→              initial={{ height: 0, opacity: 0 }}
+  2381→              animate={{ height: 'auto', opacity: 1 }}
+  2382→              exit={{ height: 0, opacity: 0 }}
+  2383→              className="overflow-hidden"
+  2384→            >
+  2385→              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+  2386→                <CardContent className="p-4">
+  2387→                  <div className="flex items-start gap-3">
+  2388→                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-800 rounded-xl flex items-center justify-center flex-shrink-0">
+  2389→                      <Info className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+  2390→                    </div>
+  2391→                    <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
+  2392→                      <h3 className="font-semibold text-blue-800 dark:text-blue-200 text-base">Como Funcionam as Conquistas?</h3>
+  2393→                      <p>🏆 <strong>Conquistas</strong> são marcos de progresso na sua jornada.</p>
+  2394→                      <p>📅 Complete <strong>missões diárias</strong> para ganhar XP e manter sua sequência.</p>
+  2395→                      <p>🔥 <strong>Sequência (streak)</strong> conta dias consecutivos de atividade.</p>
+  2396→                      <p>📚 Complete as <strong>lições das fases</strong> para desbloquear conquistas.</p>
+  2397→                      <p>💧 <strong>Hidratação</strong> - bata sua meta de água diariamente.</p>
+  2398→                      <p className="text-xs text-blue-600 dark:text-blue-400 pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+  2399→                        💡 Dica: A consistência é mais importante que a perfeição!
+  2400→                      </p>
+  2401→                    </div>
+  2402→                  </div>
+  2403→                </CardContent>
+  2404→              </Card>
+  2405→            </motion.div>
+  2406→          )}
+  2407→        </AnimatePresence>
+  2408→
+  2409→        {/* Achievement Stats */}
+  2410→        <div className="grid grid-cols-3 gap-3">
+  2411→          <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+  2412→            <CardContent className="p-3 text-center">
+  2413→              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{unlockedCount}</p>
+  2414→              <p className="text-xs text-green-600 dark:text-green-400">Desbloqueadas</p>
+  2415→            </CardContent>
+  2416→          </Card>
+  2417→          <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+  2418→            <CardContent className="p-3 text-center">
+  2419→              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{user?.progress?.streak || 0}</p>
+  2420→              <p className="text-xs text-amber-600 dark:text-amber-400">Dias Seguidos</p>
+  2421→            </CardContent>
+  2422→          </Card>
+  2423→          <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+  2424→            <CardContent className="p-3 text-center">
+  2425→              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{achievements.length}</p>
+  2426→              <p className="text-xs text-purple-600 dark:text-purple-400">Total</p>
+  2427→            </CardContent>
+  2428→          </Card>
+  2429→        </div>
+  2430→
+  2431→        {/* Achievements Grid */}
+  2432→        <div className="grid grid-cols-2 gap-3">
+  2433→          {achievements.map((achievement, i) => (
+  2434→            <motion.div
+  2435→              key={achievement.name}
+  2436→              initial={{ opacity: 0, scale: 0.9 }}
+  2437→              animate={{ opacity: 1, scale: 1 }}
+  2438→              transition={{ delay: i * 0.03 }}
+  2439→            >
+  2440→              <Card className={`shadow-md transition-all ${achievement.unlocked ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-green-300 dark:border-green-700' : 'bg-gray-50 dark:bg-gray-800 opacity-60'}`}>
+  2441→                <CardContent className="p-4 text-center">
+  2442→                  <div className={`text-3xl mb-2 ${achievement.unlocked ? '' : 'grayscale'}`}>
+  2443→                    {achievement.unlocked ? achievement.emoji : '🔒'}
+  2444→                  </div>
+  2445→                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{achievement.name}</p>
+  2446→                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{achievement.desc}</p>
+  2447→                  <div className="mt-2">
+  2448→                    {achievement.unlocked ? (
+  2449→                      <span className="text-xs bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300 px-2 py-0.5 rounded-full">
+  2450→                        ✓ Desbloqueada!
+  2451→                      </span>
+  2452→                    ) : (
+  2453→                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">
+  2454→                        {achievement.requirement}
+  2455→                      </span>
+  2456→                    )}
+  2457→                  </div>
+  2458→                </CardContent>
+  2459→              </Card>
+  2460→            </motion.div>
+  2461→          ))}
+  2462→        </div>
+  2463→
+  2464→        {/* Motivation */}
+  2465→        <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
+  2466→          <CardContent className="p-4 text-center">
+  2467→            <p className="text-sm text-purple-700 dark:text-purple-300">
+  2468→              💪 Continue sua jornada! Cada conquista desbloqueada representa um passo em direção aos seus objetivos.
+  2469→            </p>
+  2470→          </CardContent>
+  2471→        </Card>
+  2472→      </div>
+  2473→
+  2474→      <BottomNav />
+  2475→    </motion.div>
+  2476→  );
+  2477→}
+  2478→
+  2479→// ============================================
+  2480→// PROFILE SCREEN
+  2481→// ============================================
+  2482→function ProfileScreen() {
+  2483→  const { user, logout } = useAppStore();
+  2484→  const [weight, setWeight] = useState(user?.profile?.weight?.toString() || '');
+  2485→  const [goalWeight, setGoalWeight] = useState(user?.profile?.goalWeight?.toString() || '');
+  2486→  const [showConfetti, setShowConfetti] = useState(false);
+  2487→  const [motivationalMessage, setMotivationalMessage] = useState('');
+  2488→  const [userProgress, setUserProgress] = useState<UserProgress>(() => {
+  2489→    if (typeof window !== 'undefined') {
+  2490→      const saved = localStorage.getItem('quebrando-ciclo-progress');
+  2491→      if (saved) return JSON.parse(saved);
+  2492→    }
+  2493→    return {
+  2494→      phase1Lessons: [],
+  2495→      phase2Lessons: [],
+  2496→      phase3Lessons: [],
+  2497→      phase4Lessons: [],
+  2498→      exerciseAnswers: {},
+  2499→    };
+  2500→  });
+  2501→
+  2502→  const motivationalMessages = [
+  2503→    "Cada passo conta! Continue firme na sua jornada 💚",
+  2504→    "Você está se transformando a cada dia! ✨",
+  2505→    "O progresso é progresso, não importa o tamanho! 🌱",
+  2506→    "Você é mais forte do que imagina! 💪",
+  2507→    "Celebre essa vitória! Você merece! 🎉",
+  2508→  ];
+  2509→
+  2510→  const handleUpdateWeight = async () => {
+  2511→    if (!weight) return;
+  2512→    try {
+  2513→      await fetch('/api/user/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-user-id': useAppStore.getState().userId || '' }, body: JSON.stringify({ weight, goalWeight }) });
+  2514→      setShowConfetti(true);
+  2515→      setMotivationalMessage(motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]);
+  2516→      setTimeout(() => { setShowConfetti(false); setMotivationalMessage(''); }, 3000);
+  2517→    } catch (error) { console.error('Erro:', error); }
+  2518→  };
+  2519→
+  2520→  const totalLessons = journeyPhases.reduce((acc, p) => acc + p.lessons.length, 0);
+  2521→  const completedLessons = userProgress.phase1Lessons.length + userProgress.phase2Lessons.length + 
+  2522→                          userProgress.phase3Lessons.length + userProgress.phase4Lessons.length;
+  2523→
+  2524→  return (
+  2525→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  2526→      <Confetti show={showConfetti} />
+  2527→      
+  2528→      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-b-3xl">
+  2529→        <div className="flex items-center gap-4">
+  2530→          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-3xl">👤</div>
+  2531→          <div>
+  2532→            <h1 className="text-2xl font-bold">{user?.name}</h1>
+  2533→            <p className="text-green-100">Nível {user?.progress?.level || 1}</p>
+  2534→          </div>
+  2535→        </div>
+  2536→        <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+  2537→          <div><p className="text-2xl font-bold">{user?.progress?.xp || 0}</p><p className="text-xs text-green-100">XP Total</p></div>
+  2538→          <div><p className="text-2xl font-bold">🔥 {user?.progress?.streak || 0}</p><p className="text-xs text-green-100">Sequência</p></div>
+  2539→          <div><p className="text-2xl font-bold">{completedLessons}/{totalLessons}</p><p className="text-xs text-green-100">Lições</p></div>
+  2540→        </div>
+  2541→      </div>
+  2542→      
+  2543→      <div className="p-4 space-y-4">
+  2544→        {motivationalMessage && (
+  2545→          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-xl text-center">
+  2546→            <p className="font-medium">{motivationalMessage}</p>
+  2547→          </motion.div>
+  2548→        )}
+  2549→
+  2550→        <Card className="shadow-md">
+  2551→          <CardContent className="p-4 space-y-4">
+  2552→            <div>
+  2553→              <Label>Peso Atual (kg)</Label>
+  2554→              <Input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Seu peso" className="mt-1" />
+  2555→            </div>
+  2556→            <div>
+  2557→              <Label>Meta de Peso (kg)</Label>
+  2558→              <Input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} placeholder="Sua meta" className="mt-1" />
+  2559→            </div>
+  2560→            <Button onClick={handleUpdateWeight} className="w-full bg-green-500 hover:bg-green-600">Atualizar Peso</Button>
+  2561→          </CardContent>
+  2562→        </Card>
+  2563→        
+  2564→        <Card className="shadow-md">
+  2565→          <CardContent className="p-4">
+  2566→            <h3 className="font-semibold mb-3">Progresso das Fases</h3>
+  2567→            <div className="space-y-3">
+  2568→              {journeyPhases.map((phase, i) => {
+  2569→                const completed = (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [];
+  2570→                return (
+  2571→                  <div key={i}>
+  2572→                    <div className="flex justify-between text-sm mb-1">
+  2573→                      <span>{phase.emoji} {phase.title}</span>
+  2574→                      <span className="text-gray-500">{completed.length}/{phase.lessons.length}</span>
+  2575→                    </div>
+  2576→                    <Progress value={phase.lessons.length > 0 ? (completed.length / phase.lessons.length) * 100 : 0} className="h-2" />
+  2577→                  </div>
+  2578→                );
+  2579→              })}
+  2580→            </div>
+  2581→          </CardContent>
+  2582→        </Card>
+  2583→        
+  2584→        <Button onClick={() => logout()} variant="outline" className="w-full border-red-200 text-red-500 hover:bg-red-50">Sair da Conta</Button>
+  2585→      </div>
+  2586→
+  2587→      <BottomNav />
+  2588→    </motion.div>
+  2589→  );
+  2590→}
+  2591→
+  2592→// ============================================
+  2593→// RECIPE DETAIL SCREEN
+  2594→// ============================================
+  2595→function RecipeDetailScreen() {
+  2596→  const { selectedRecipe, setCurrentView, addFavorite, removeFavoriteByItem, isFavorite } = useAppStore();
+  2597→  const recipe = recipesData.find(r => r.id === selectedRecipe);
+  2598→
+  2599→  if (!recipe) {
+  2600→    return (
+  2601→      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+  2602→        <div className="text-center">
+  2603→          <ChefHat className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+  2604→          <p className="text-gray-500">Receita não encontrada</p>
+  2605→          <Button onClick={() => setCurrentView('nutrition')} className="mt-4">Voltar</Button>
+  2606→        </div>
+  2607→      </div>
+  2608→    );
+  2609→  }
+  2610→
+  2611→  const isFav = isFavorite(recipe.id, undefined);
+  2612→  const categoryLabels: Record<string, string> = {
+  2613→    cafe_salgado: '🍳 Café Salgado',
+  2614→    cafe_doce: '🥞 Café Doce',
+  2615→    principal: '🍽️ Principal',
+  2616→    lanche_salgado: '🥪 Lanche Salgado',
+  2617→    lanche_doce: '🍰 Lanche Doce',
+  2618→  };
+  2619→
+  2620→  const getDifficultyColor = (difficulty: string) => {
+  2621→    switch (difficulty) {
+  2622→      case 'facil': return 'bg-green-100 text-green-700 border-green-200';
+  2623→      case 'medio': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+  2624→      case 'dificil': return 'bg-red-100 text-red-700 border-red-200';
+  2625→      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+  2626→    }
+  2627→  };
+  2628→
+  2629→  const handleToggleFavorite = () => {
+  2630→    if (isFav) {
+  2631→      removeFavoriteByItem(recipe.id, undefined);
+  2632→    } else {
+  2633→      addFavorite({ recipeId: recipe.id });
+  2634→    }
+  2635→  };
+  2636→
+  2637→  return (
+  2638→    <motion.div className="min-h-screen bg-gray-50 pb-6" {...fadeIn}>
+  2639→      {/* Header */}
+  2640→      <div className="bg-gradient-to-br from-orange-100 to-amber-100 pt-4 pb-20 relative">
+  2641→        <button 
+  2642→          onClick={() => setCurrentView('nutrition')} 
+  2643→          className="absolute top-4 left-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm z-10"
+  2644→        >
+  2645→          <ChevronLeft className="h-5 w-5 text-gray-600" />
+  2646→        </button>
+  2647→        <div className="flex items-center justify-center pt-8">
+  2648→          <span className="text-6xl">
+  2649→            {recipe.category.includes('cafe') ? '🥐' : recipe.category.includes('principal') ? '🍽️' : recipe.category.includes('lanche_doce') ? '🍰' : '🥪'}
+  2650→          </span>
+  2651→        </div>
+  2652→      </div>
+  2653→
+  2654→      <div className="px-4 -mt-12 space-y-4">
+  2655→        {/* Main Info Card */}
+  2656→        <Card className="shadow-lg">
+  2657→          <CardContent className="p-5">
+  2658→            <div className="flex items-start justify-between gap-3">
+  2659→              <div className="flex-1">
+  2660→                <div className="flex items-center gap-2 mb-2">
+  2661→                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+  2662→                    {categoryLabels[recipe.category] || recipe.category}
+  2663→                  </span>
+  2664→                  <span className={`text-xs px-2 py-0.5 rounded-full border ${getDifficultyColor(recipe.difficulty || 'facil')}`}>
+  2665→                    {recipe.difficulty === 'facil' ? 'Fácil' : recipe.difficulty === 'medio' ? 'Médio' : 'Difícil'}
+  2666→                  </span>
+  2667→                </div>
+  2668→                <h1 className="text-xl font-bold text-gray-800">{recipe.name}</h1>
+  2669→                {recipe.description && <p className="text-gray-600 text-sm mt-2">{recipe.description}</p>}
+  2670→              </div>
+  2671→              <button
+  2672→                onClick={handleToggleFavorite}
+  2673→                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-400'}`}
+  2674→              >
+  2675→                <Heart className={`h-5 w-5 ${isFav ? 'fill-current' : ''}`} />
+  2676→              </button>
+  2677→            </div>
+  2678→          </CardContent>
+  2679→        </Card>
+
+[showing lines 680-2679 of 3362; use offset=2680 with limit to continue reading]

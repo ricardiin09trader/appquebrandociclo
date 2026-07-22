@@ -1,0 +1,2002 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useCallback, useMemo } from 'react';
+     4→     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→     5→import { 
+     6→     6→  Home, BookOpen, ChefHat, Trophy, User, ChevronRight, ChevronLeft, 
+     7→     7→  Heart, Plus, Minus, Check, Droplets, Target, Download, X, 
+     8→     8→  Share2, Award, Clock, Brain, Utensils, GlassWater, Dumbbell,
+     9→     9→  Star, Zap, Lock, Unlock, Play, Pause, RotateCcw, Edit3, Search, Flame,
+    10→    10→  Sun, Moon, Smartphone, Info, XCircle, Share, ChevronDown, Mail, Eye, EyeOff, Shield
+    11→    11→} from 'lucide-react';
+    12→    12→import { Button } from '@/components/ui/button';
+    13→    13→import { Progress } from '@/components/ui/progress';
+    14→    14→import { Card, CardContent } from '@/components/ui/card';
+    15→    15→import { Input } from '@/components/ui/input';
+    16→    16→import { Label } from '@/components/ui/label';
+    17→    17→import { Textarea } from '@/components/ui/textarea';
+    18→    18→import { useAppStore } from '@/store/useAppStore';
+    19→    19→import { useThemeStore, applyTheme } from '@/store/useThemeStore';
+    20→    20→import { juices as juicesData, type Juice as JuiceType } from '@/data/juices';
+    21→    21→import { recipes as recipesData, type Recipe as RecipeType } from '@/data/recipes';
+    22→    22→
+    23→    23→// ============================================
+    24→    24→// FRASES MOTIVACIONAIS (20 VARIAÇÕES)
+    25→    25→// ============================================
+    26→    26→const motivationalPhrases = [
+    27→    27→  { quote: "Você não está de dieta. Você está quebrando um ciclo.", category: "mentalidade" },
+    28→    28→  { quote: "Cada escolha saudável é uma declaração de amor próprio.", category: "mentalidade" },
+    29→    29→  { quote: "Não é sobre ficar magra. É sobre ficar saudável e feliz.", category: "mentalidade" },
+    30→    30→  { quote: "O corpo que você tem é o único lugar que você tem que viver. Cuide dele.", category: "mentalidade" },
+    31→    31→  { quote: "Pequenos progressos ainda são progressos.", category: "geral" },
+    32→    32→  { quote: "Um dia de cada vez, uma escolha de cada vez.", category: "geral" },
+    33→    33→  { quote: "Você é mais forte do que suas desculpas.", category: "mentalidade" },
+    34→    34→  { quote: "A água é o combustível do seu corpo. Hidrate-se!", category: "agua" },
+    35→    35→  { quote: "Beber água é o ato de amor mais simples que você pode fazer por você.", category: "agua" },
+    36→    36→  { quote: "Seu corpo está pedindo água, não comida.", category: "agua" },
+    37→    37→  { quote: "Comer bem não é privação, é nutrição.", category: "alimentacao" },
+    38→    38→  { quote: "Cada refeição é uma oportunidade de nutrir seu corpo.", category: "alimentacao" },
+    39→    39→  { quote: "Comida saudável pode ser deliciosa. Descubra!", category: "alimentacao" },
+    40→    40→  { quote: "Você não precisa comer menos, precisa comer melhor.", category: "alimentacao" },
+    41→    41→  { quote: "O exercício é celebração do que seu corpo pode fazer.", category: "exercicio" },
+    42→    42→  { quote: "Mover o corpo é agradecer por ele existir.", category: "exercicio" },
+    43→    43→  { quote: "A consistência vence a intensidade.", category: "geral" },
+    44→    44→  { quote: "Você não falhou. Você aprendeu.", category: "mentalidade" },
+    45→    45→  { quote: "Seu progresso pode ser lento, mas é progresso.", category: "geral" },
+    46→    46→  { quote: "A transformação começa na mente.", category: "mentalidade" },
+    47→    47→];
+    48→    48→
+    49→    49→// ============================================
+    50→    50→// JORNADA GAMIFICADA - FASES E LIÇÕES
+    51→    51→// ============================================
+    52→    52→const journeyPhases = [
+    53→    53→  {
+    54→    54→    id: 1,
+    55→    55→    title: "Mentalidade",
+    56→    56→    emoji: "🧠",
+    57→    57→    color: "from-purple-500 to-purple-600",
+    58→    58→    description: "Prepare sua mente para a transformação",
+    59→    59→    lessons: [
+    60→    60→      {
+    61→    61→        id: 1,
+    62→    62→        title: "Bem-vindo à Jornada",
+    63→    63→        content: `# Sua Jornada Começa Aqui! 🌟
+    64→    64→
+    65→    65→"Dê o primeiro passo com fé. Não é necessário que você veja toda a escada. Apenas dê o primeiro passo." - Martin Luther King
+    66→    66→
+    67→    67→Você decidiu embarcar nesta jornada de transformação. Antes de mergulharmos nas estratégias práticas, é fundamental construir as bases mentais para o seu triunfo.
+    68→    68→
+    69→    69→## O que você vai descobrir:
+    70→    70→
+    71→    71→✨ Que o emagrecimento não é apenas uma mudança física
+    72→    72→✨ Como desenvolver uma relação saudável com a comida
+    73→    73→✨ A importância de uma mentalidade positiva
+    74→    74→✨ Estratégias para superar crenças limitantes
+    75→    75→
+    76→    76→**Lembre-se:** O verdadeiro sucesso vai além dos números na balança. Vamos transformar sua mentalidade e seu corpo, criando um novo capítulo emocionante em sua vida.`,
+    77→    77→        exercises: [
+    78→    78→          { question: "O que te motivou a iniciar esta jornada de transformação?", placeholder: "Escreva aqui sua motivação principal..." },
+    79→    79→          { question: "Qual é o seu maior objetivo com essa mudança?", placeholder: "Descreva seu objetivo..." },
+    80→    80→        ],
+    81→    81→        xp: 20,
+    82→    82→      },
+    83→    83→      {
+    84→    84→        id: 2,
+    85→    85→        title: "Abordagem Equilibrada",
+    86→    86→        content: `# Abordagem Equilibrada para o Emagrecimento 📊
+    87→    87→
+    88→    88→Vamos explorar os benefícios de adotar uma abordagem equilibrada para alcançar seus objetivos.
+    89→    89→
+    90→    90→## 1. Transformação Completa 🔄
+    91→    91→Uma abordagem equilibrada vai além de perder peso. Ela abrange uma mudança completa, incluindo a saúde da mente, das emoções e do corpo.
+    92→    92→
+    93→    93→## 2. Relação Positiva com a Alimentação 🍎
+    94→    94→Você cultiva uma relação amigável com a comida e o corpo. Priorizando alimentos nutritivos e prazerosos, em vez de apenas impor restrições.
+    95→    95→
+    96→    96→## 3. Progresso Sustentável 📈
+    97→    97→O sucesso duradouro depende da sustentabilidade. Hábitos realistas e práticos são mantidos a longo prazo.
+    98→    98→
+    99→    99→## 4. Bem-Estar Mental e Emocional 🧘
+   100→   100→Uma abordagem equilibrada melhora a saúde física e impacta positivamente o bem-estar mental.
+   101→   101→
+   102→   102→## 5. Autoconfiança e Autoestima 💪
+   103→   103→Construir conquistas consistentes gera um sentimento de orgulho e empoderamento.`,
+   104→   104→        exercises: [
+   105→   105→          { question: "Como você descreveria sua relação atual com a alimentação?", placeholder: "Descreva sua relação..." },
+   106→   106→          { question: "O que você entende por 'abordagem equilibrada'?", placeholder: "Escreva sua compreensão..." },
+   107→   107→        ],
+   108→   108→        xp: 25,
+   109→   109→      },
+   110→   110→      {
+   111→   111→        id: 3,
+   112→   112→        title: "Crenças Limitantes",
+   113→   113→        content: `# Superando Crenças Limitantes 🚫➡️✅
+   114→   114→
+   115→   115→Crenças limitantes podem estar bloqueando seu progresso. Vamos identificá-las e superá-las!
+   116→   116→
+   117→   117→## Crenças Comuns que Limitam:
+   118→   118→
+   119→   119→❌ "Não sou capaz de emagrecer"
+   120→   120→❌ "Dieta é sempre difícil"
+   121→   121→❌ "Eu herdei essa genética"
+   122→   122→❌ "Não tenho tempo para me exercitar"
+   123→   123→❌ "Só serei feliz quando emagrecer"
+   124→   124→❌ "Já tentei tudo e nada funciona"
+   125→   125→
+   126→   126→## Impacto no Comportamento:
+   127→   127→Essas crenças podem levar à:
+   128→   128→- Autossabotagem
+   129→   129→- Procrastinação
+   130→   130→- Desistência precoce
+   131→   131→- Baixa autoestima
+   132→   132→
+   133→   133→## Como Superar:
+   134→   134→1. **Identifique** a crença limitante
+   135→   135→2. **Questione** se ela é verdadeira
+   136→   136→3. **Reframe** para uma crença positiva
+   137→   137→4. **Aja** de acordo com a nova crença`,
+   138→   138→        exercises: [
+   139→   139→          { question: "Quais crenças limitantes você identifica em si mesmo?", placeholder: "Liste suas crenças limitantes..." },
+   140→   140→          { question: "Como você pode transformar cada uma dessas crenças em algo positivo?", placeholder: "Reescreva suas crenças de forma positiva..." },
+   141→   141→        ],
+   142→   142→        xp: 30,
+   143→   143→      },
+   144→   144→      {
+   145→   145→        id: 4,
+   146→   146→        title: "12 Estratégias de Sucesso",
+   147→   147→        content: `# 12 Estratégias para Mentalidade Positiva 🎯
+   148→   148→
+   149→   149→## 1. Autoconhecimento 🪞
+   150→   150→Compreenda seus padrões alimentares, emoções e motivações pessoais.
+   151→   151→
+   152→   152→## 2. Defina Objetivos Realistas 🎯
+   153→   153→Metas alcançáveis e mensuráveis. Ex: "Adicionar mais vegetais às refeições"
+   154→   154→
+   155→   155→## 3. Distinga Fome de Emoção 🤔
+   156→   156→Reconheça quando está com fome física versus fome emocional.
+   157→   157→
+   158→   158→## 4. Evite Restrições Extremas ⚖️
+   159→   159→RESTRIÇÃO GERA COMPULSÃO. Equilíbrio é fundamental.
+   160→   160→
+   161→   161→## 5. Esteja Atento à Saciedade 🛑
+   162→   162→Pare de comer quando se sentir satisfeito, não completamente cheio.
+   163→   163→
+   164→   164→## 6. Planejamento é Chave 📅
+   165→   165→Programe suas refeições com antecedência.
+   166→   166→
+   167→   167→## 7. Alimente-se para Nutrir 🥗
+   168→   168→Veja os alimentos como combustível para seu corpo.
+   169→   169→
+   170→   170→## 8. Inclua Proteína 🍗
+   171→   171→Ajuda a manter a saciedade.
+   172→   172→
+   173→   173→## 9. Mantenha-se Ativo 🏃
+   174→   174→Encontre uma atividade que você goste.
+   175→   175→
+   176→   176→## 10. Mantenha-se Hidratado 💧
+   177→   177→Água pode evitar confundir sede com fome.
+   178→   178→
+   179→   179→## 11. Escolha Alimentos Integrais 🌾
+   180→   180→Opte por alimentos naturais e menos processados.
+   181→   181→
+   182→   182→## 12. Ame a Jornada ❤️
+   183→   183→Celebre cada conquista, por menor que seja.`,
+   184→   184→        exercises: [
+   185→   185→          { question: "Quais dessas 12 estratégias você já pratica?", placeholder: "Liste as que já faz parte da sua rotina..." },
+   186→   186→          { question: "Quais 3 estratégias você vai implementar primeiro?", placeholder: "Escolha 3 estratégias para começar..." },
+   187→   187→          { question: "Como você pretende implementar cada uma delas?", placeholder: "Descreva seu plano de ação..." },
+   188→   188→        ],
+   189→   189→        xp: 35,
+   190→   190→      },
+   191→   191→    ],
+   192→   192→  },
+   193→   193→  {
+   194→   194→    id: 2,
+   195→   195→    title: "Hidratação",
+   196→   196→    emoji: "💧",
+   197→   197→    color: "from-blue-500 to-blue-600",
+   198→   198→    description: "Descubra a importância da água",
+   199→   199→    lessons: [
+   200→   200→      {
+   201→   201→        id: 1,
+   202→   202→        title: "O Poder da Água",
+   203→   203→        content: `# O Poder da Água na Transformação 💧
+   204→   204→
+   205→   205→## Por que a água é tão importante?
+   206→   206→
+   207→   207→A água é essencial para todas as funções do corpo. Ela:
+   208→   208→- Regula a temperatura corporal
+   209→   209→- Auxilia na digestão
+   210→   210→- Elimina toxinas
+   211→   211→- Mantém a pele saudável
+   212→   212→- Melhora o funcionamento do cérebro
+   213→   213→- Auxilia na perda de peso
+   214→   214→
+   215→   215→## Cálculo da sua Meta Diária 📊
+   216→   216→
+   217→   217→**Fórmula:** Seu peso × 35 = ml de água por dia
+   218→   218→
+   219→   219→### Exemplo:
+   220→   220→Maria tem 60kg
+   221→   221→60 × 35 = 2.100ml
+   222→   222→Maria deve tomar 2 litros e 100ml por dia
+   223→   223→
+   224→   224→## Dicas Práticas 💡
+   225→   225→
+   226→   226→✅ Ande sempre com uma garrafinha bonitinha
+   227→   227→✅ Defina alarmes para lembrar de beber água
+   228→   228→✅ Beba um copo antes de cada refeição
+   229→   229→✅ Adicione limão, hortelã ou frutas para dar sabor
+   230→   230→✅ Comece o dia com um copo de água em jejum`,
+   231→   231→        exercises: [
+   232→   232→          { question: "Qual é o seu peso atual? (para calcular sua meta de água)", placeholder: "Ex: 70kg" },
+   233→   233→          { question: "Quantos copos de água você bebe atualmente por dia?", placeholder: "Ex: 4 copos" },
+   234→   234→          { question: "Qual estratégia você vai usar para aumentar seu consumo de água?", placeholder: "Descreva sua estratégia..." },
+   235→   235→        ],
+   236→   236→        xp: 25,
+   237→   237→      },
+   238→   238→    ],
+   239→   239→  },
+   240→   240→  {
+   241→   241→    id: 3,
+   242→   242→    title: "Comer Emocional",
+   243→   243→    emoji: "🍽️",
+   244→   244→    color: "from-pink-500 to-pink-600",
+   245→   245→    description: "Identifique seus gatilhos",
+   246→   246→    lessons: [
+   247→   247→      {
+   248→   248→        id: 1,
+   249→   249→        title: "O que é Comer Emocional?",
+   250→   250→        content: `# O que é Comer Emocional? 🤔
+   251→   251→
+   252→   252→Comer emocional está presente em nossas vidas por um simples motivo: **somos seres humanos!**
+   253→   253→
+   254→   254→Enquanto vivermos, teremos que lidar com nossas emoções e, em algumas ocasiões, a comida estará presente nesse processo.
+   255→   255→
+   256→   256→## Quando é Normal? ✅
+   257→   257→- Comer em comemorações (aniversários, casamentos)
+   258→   258→- Comer por tristeza ocasional
+   259→   259→- Comer para celebrar momentos especiais
+   260→   260→
+   261→   261→## Quando é um Problema? ⚠️
+   262→   262→
+   263→   263→A grande questão é quando a **comida se torna a resposta para tudo**:
+   264→   264→- Tédio
+   265→   265→- Tristeza
+   266→   266→- Alegria
+   267→   267→- Raiva
+   268→   268→- Ansiedade
+   269→   269→
+   270→   270→E acontece numa **frequência alta, quase que diária**.`,
+   271→   271→        exercises: [
+   272→   272→          { question: "Com que frequência você come por razões emocionais?", placeholder: "Ex: Diariamente, algumas vezes por semana..." },
+   273→   273→          { question: "Em quais situações você mais recorre à comida?", placeholder: "Descreva as situações..." },
+   274→   274→        ],
+   275→   275→        xp: 20,
+   276→   276→      },
+   277→   277→      {
+   278→   278→        id: 2,
+   279→   279→        title: "Identificando Emoções",
+   280→   280→        content: `# Identificando Suas Emoções 🔍
+   281→   281→
+   282→   282→A tomada de consciência dos sentimentos associados ao comer é fundamental.
+   283→   283→
+   284→   284→## Tabela de Emoções e Respostas:
+   285→   285→
+   286→   286→| Emoção/Sentimento | Resposta |
+   287→   287→|-------------------|----------|
+   288→   288→| 😰 Ansiedade | Usar comida para acalmar |
+   289→   289→| 😴 Tédio | Comer para fazer alguma coisa |
+   290→   290→| 😫 Estresse | Comer para ter alívio |
+   291→   291→| 🎁 Suborno | "Acabe a tarefa e você ganha algo" |
+   292→   292→| 🕳️ Vazio | Comer por falta de sentido |
+   293→   293→| 🎉 Excitação | Comer como algo divertido |
+   294→   294→| 😢 Solidão | Usar comida como companhia |
+   295→   295→| 😤 Frustração/Raiva | Comer como catarse |
+   296→   296→| 😰 Tristeza | Usar comida como consolo |
+   297→   297→| ⏰ Procrastinação | "Vou fazer depois de comer" |
+   298→   298→| 🏆 Prêmio | "Eu mereço" |
+   299→   299→
+   300→   300→## Pergunta-chave:
+   301→   301→Antes de comer, pergunte-se: **"Estou com fome física ou emocional?"**`,
+   302→   302→        exercises: [
+   303→   303→          { question: "Quais emoções da tabela você identifica em si mesmo com mais frequência?", placeholder: "Liste as emoções..." },
+   304→   304→          { question: "Faça um registro das vezes que comeu hoje e como estava se sentindo:", placeholder: "Ex: 10h - comi um biscoito - estava ansiosa..." },
+   305→   305→        ],
+   306→   306→        xp: 30,
+   307→   307→      },
+   308→   308→      {
+   309→   309→        id: 3,
+   310→   310→        title: "Comportamentos Alternativos",
+   311→   311→        content: `# Comportamentos Alternativos 🔄
+   312→   312→
+   313→   313→Agora que você identificou suas emoções, vamos encontrar alternativas para cada situação!
+   314→   314→
+   315→   315→## Exemplos de Comportamentos Alternativos:
+   316→   316→
+   317→   317→### 😰 Para Ansiedade:
+   318→   318→- Tomar um banho relaxante
+   319→   319→- Fazer exercícios de respiração
+   320→   320→- Ouvir música calma
+   321→   321→- Meditar por 5 minutos
+   322→   322→
+   323→   323→### 😴 Para Tédio:
+   324→   324→- Ler um livro
+   325→   325→- Fazer um passeio
+   326→   326→- Aprender algo novo
+   327→   327→- Ligar para um amigo
+   328→   328→
+   329→   329→### 😫 Para Estresse:
+   330→   330→- Praticar atividade física
+   331→   331→- Fazer alongamento
+   332→   332→- Escrever em um diário
+   333→   333→- Tomar um chá relaxante
+   334→   334→
+   335→   335→### 😢 Para Tristeza:
+   336→   336→- Assistir uma série leve
+   337→   337→- Conversar com alguém querido
+   338→   338→- Fazer algo que te dá prazer
+   339→   339→- Ouvir uma playlist animada
+   340→   340→
+   341→   341→### 😤 Para Raiva/Frustração:
+   342→   342→- Escrever como se sente
+   343→   343→- Fazer exercício intenso
+   344→   344→- Organizar algo
+   345→   345→- Sair para caminhar`,
+   346→   346→        exercises: [
+   347→   347→          { question: "Para cada emoção que você identificou, qual comportamento alternativo você pode adotar?", placeholder: "Liste: Emoção → Comportamento alternativo..." },
+   348→   348→          { question: "Quais dessas alternativas você já tem disponível no seu dia a dia?", placeholder: "Liste as que são possíveis para você..." },
+   349→   349→          { question: "Quais novas alternativas você pretende implementar?", placeholder: "Descreva seu plano..." },
+   350→   350→        ],
+   351→   351→        xp: 40,
+   352→   352→      },
+   353→   353→    ],
+   354→   354→  },
+   355→   355→  {
+   356→   356→    id: 4,
+   357→   357→    title: "Plano Alimentar",
+   358→   358→    emoji: "🥗",
+   359→   359→    color: "from-green-500 to-green-600",
+   360→   360→    description: "Seu menu de 1500kcal",
+   361→   361→    lessons: [
+   362→   362→      {
+   363→   363→        id: 1,
+   364→   364→        title: "Conhecendo seu Plano",
+   365→   365→        content: `# Plano Alimentar 1500 kcal 📋
+   366→   366→
+   367→   367→Nutricionista: Natalia Cavalcante | CRN 17639
+   368→   368→
+   369→   369→## Nossos Objetivos 🎯
+   370→   370→
+   371→   371→✅ Emagrecimento sustentável
+   372→   372→✅ Reeducação alimentar  
+   373→   373→✅ Saúde e bem-estar
+   374→   374→
+   375→   375→## Antes de tudo, beba ÁGUA! 💧
+   376→   376→
+   377→   377→**Cálculo:** Seu peso × 35 = ml de água por dia
+   378→   378→
+   379→   379→## Orientações Importantes ⚠️
+   380→   380→
+   381→   381→⏰ **Intervalo:** 3 horas entre refeições
+   382→   382→⚖️ **Pesagem:** Use balança digital
+   383→   383→😴 **Sono:** 7-8 horas por dia
+   384→   384→🚫 **Proibido:** Açúcares, doces, refrigerantes
+   385→   385→✅ **Permitido:** Café, adoçante, refrigerante zero
+   386→   386→
+   387→   387→## Duração: 30 dias
+   388→   388→
+   389→   389→Após esse período, consulte seu nutricionista para ajustes.`,
+   390→   390→        exercises: [
+   391→   391→          { question: "Você entendeu as orientações? Qual é a principal dificuldade que você prevê?", placeholder: "Escreva suas preocupações..." },
+   392→   392→          { question: "Como você pretende se organizar para seguir o plano?", placeholder: "Descreva sua estratégia..." },
+   393→   393→        ],
+   394→   394→        xp: 20,
+   395→   395→      },
+   396→   396→    ],
+   397→   397→  },
+   398→   398→];
+   399→   399→
+   400→   400→// ============================================
+   401→   401→// PLANO ALIMENTAR COMPLETO (1500 KCAL)
+   402→   402→// ============================================
+   403→   403→const completeMealPlan = {
+   404→   404→  cafe_manha: {
+   405→   405→    title: 'Café da Manhã',
+   406→   406→    emoji: '🌅',
+   407→   407→    calories: '~350 kcal',
+   408→   408→    options: [
+   409→   409→      {
+   410→   410→        name: 'Opção 1',
+   411→   411→        items: [
+   412→   412→          { food: 'Pão de forma integral', amount: '2 fatias (50g)' },
+   413→   413→          { food: 'Ovo de galinha', amount: '2 unidades (100g)' },
+   414→   414→          { food: 'Café sem açúcar', amount: '1 xícara' },
+   415→   415→        ],
+   416→   416→      },
+   417→   417→      {
+   418→   418→        name: 'Opção 2',
+   419→   419→        items: [
+   420→   420→          { food: 'Iogurte zero', amount: '200g' },
+   421→   421→          { food: 'Morango', amount: '100g' },
+   422→   422→          { food: 'Aveia em flocos finos', amount: '1 colher de chá cheia (12g)' },
+   423→   423→          { food: 'Whey Protein', amount: '1 scoop' },
+   424→   424→        ],
+   425→   425→      },
+   426→   426→    ],
+   427→   427→    substitutions: [
+   428→   428→      { original: 'Pão de forma integral', options: ['Pão francês (1 unidade - 50g)', 'Goma de tapioca (60g)', 'Cuscuz de milho cozido (100g)'] },
+   429→   429→      { original: 'Ovo de galinha', options: ['Queijo minas frescal (50g)', 'Peito de frango desfiado (80g)'] },
+   430→   430→      { original: 'Morango', options: ['Maçã (100g)', 'Melão (100g)', 'Uva (100g)', 'Banana (1 unidade)'] },
+   431→   431→    ],
+   432→   432→  },
+   433→   433→  almoco: {
+   434→   434→    title: 'Almoço',
+   435→   435→    emoji: '☀️',
+   436→   436→    calories: '~550 kcal',
+   437→   437→    options: [
+   438→   438→      {
+   439→   439→        name: 'Opção Única',
+   440→   440→        items: [
+   441→   441→          { food: 'Arroz branco cozido', amount: '80g' },
+   442→   442→          { food: 'Feijão cozido', amount: '80g' },
+   443→   443→          { food: 'Peito de frango grelhado', amount: '120g' },
+   444→   444→          { food: 'Salada de legumes cozidos no vapor', amount: '100g' },
+   445→   445→          { food: 'Salada crua', amount: 'À vontade' },
+   446→   446→          { food: 'Melancia', amount: '250g' },
+   447→   447→        ],
+   448→   448→      },
+   449→   449→    ],
+   450→   450→    substitutions: [
+   451→   451→      { original: 'Arroz branco cozido', options: ['Batata inglesa (150g)', 'Arroz integral (80g)', 'Macarrão (80g)'] },
+   452→   452→      { original: 'Feijão carioca cozido', options: ['Feijão preto cozido (80g)', 'Grão de bico cozido (50g)'] },
+   453→   453→      { original: 'Peito de frango', options: ['Carne Patinho (120g)', 'Filé de peixe grelhado/assado (120g)'] },
+   454→   454→      { original: 'Melancia', options: ['Melão (250g)', 'Abacaxi (100g)'] },
+   455→   455→    ],
+   456→   456→  },
+   457→   457→  lanche_tarde: {
+   458→   458→    title: 'Lanche da Tarde',
+   459→   459→    emoji: '🌻',
+   460→   460→    calories: '~200 kcal',
+   461→   461→    options: [
+   462→   462→      {
+   463→   463→        name: 'Opção 1',
+   464→   464→        items: [
+   465→   465→          { food: 'Cuscuz de milho cozido com sal', amount: '80g' },
+   466→   466→          { food: 'Ovo de galinha', amount: '1 unidade (50g)' },
+   467→   467→          { food: 'Semente de chia', amount: '1 colher de chá cheia (6g)' },
+   468→   468→        ],
+   469→   469→      },
+   470→   470→      {
+   471→   471→        name: 'Opção 2',
+   472→   472→        items: [
+   473→   473→          { food: 'Banana', amount: '1 unidade' },
+   474→   474→          { food: 'Aveia', amount: '30g' },
+   475→   475→          { food: 'Canela em pó', amount: '1 colher de café cheia (4g)' },
+   476→   476→        ],
+   477→   477→      },
+   478→   478→    ],
+   479→   479→    substitutions: [
+   480→   480→      { original: 'Cuscuz de milho cozido', options: ['Pão de forma integral (2 fatias - 50g)', 'Pão francês (1 unidade - 50g)', 'Tapioca (1 unidade - 50g)'] },
+   481→   481→    ],
+   482→   482→  },
+   483→   483→  jantar: {
+   484→   484→    title: 'Jantar',
+   485→   485→    emoji: '🌙',
+   486→   486→    calories: '~350 kcal',
+   487→   487→    options: [
+   488→   488→      {
+   489→   489→        name: 'Opção Única',
+   490→   490→        items: [
+   491→   491→          { food: 'Arroz branco cozido', amount: '80g' },
+   492→   492→          { food: 'Feijão carioca cozido', amount: '80g' },
+   493→   493→          { food: 'Peito de frango grelhado', amount: '120g' },
+   494→   494→          { food: 'Salada de legumes cozidos no vapor com sal', amount: '100g' },
+   495→   495→          { food: 'Salada crua', amount: 'À vontade' },
+   496→   496→          { food: 'Abacaxi com canela (opcional)', amount: '2 fatias médias (150g)' },
+   497→   497→        ],
+   498→   498→      },
+   499→   499→    ],
+   500→   500→    substitutions: [
+   501→   501→      { original: 'Arroz branco cozido', options: ['Batata inglesa (150g)', 'Macarrão (80g)', 'Arroz integral (80g)'] },
+   502→   502→      { original: 'Peito de frango', options: ['Carne Patinho (120g)', 'Filé de peixe grelhado/assado (120g)'] },
+   503→   503→      { original: 'Abacaxi com canela', options: ['Melancia (2 fatias pequenas - 200g)', 'Melão (3 fatias pequenas - 200g)'] },
+   504→   504→    ],
+   505→   505→  },
+   506→   506→  ceia: {
+   507→   507→    title: 'Ceia',
+   508→   508→    emoji: '😴',
+   509→   509→    calories: '~100 kcal',
+   510→   510→    options: [
+   511→   511→      {
+   512→   512→        name: 'Opção Única',
+   513→   513→        items: [
+   514→   514→          { food: 'Morango', amount: '100g' },
+   515→   515→          { food: 'Leite em pó', amount: '20g' },
+   516→   516→        ],
+   517→   517→      },
+   518→   518→    ],
+   519→   519→    substitutions: [
+   520→   520→      { original: 'Morango', options: ['Uva (100g)', 'Kiwi (100g)'] },
+   521→   521→    ],
+   522→   522→  },
+   523→   523→};
+   524→   524→
+   525→   525→// ============================================
+   526→   526→// FICHA DE TREINO COMPLETA
+   527→   527→// ============================================
+   528→   528→const workoutPlan = {
+   529→   529→  segunda: {
+   530→   530→    title: 'Segunda - Quadríceps',
+   531→   531→    emoji: '🦵',
+   532→   532→    color: 'from-red-500 to-red-600',
+   533→   533→    exercises: [
+   534→   534→      { name: 'Cadeira Extensora', sets: '4x12-15', rest: '60s' },
+   535→   535→      { name: 'Afundo', sets: '4x12-15', rest: '60s' },
+   536→   536→      { name: 'Búlgaro', sets: '4x12-15', rest: '60s' },
+   537→   537→      { name: 'Mesa Flexora', sets: '4x12-15', rest: '60s' },
+   538→   538→      { name: 'Panturrilha no Leg', sets: '5x15-20', rest: '45s' },
+   539→   539→      { name: 'Abdominal Máquina', sets: '3x10-12', rest: '45s' },
+   540→   540→    ],
+   541→   541→  },
+   542→   542→  terca: {
+   543→   543→    title: 'Terça - Costas e Bíceps',
+   544→   544→    emoji: '💪',
+   545→   545→    color: 'from-purple-500 to-purple-600',
+   546→   546→    exercises: [
+   547→   547→      { name: 'Puxada Alta', sets: '4x10-12', rest: '60s' },
+   548→   548→      { name: 'Remada Máquina Neutra', sets: '4x10-12', rest: '60s' },
+   549→   549→      { name: 'Remada Máquina Aberta', sets: '4x10-12', rest: '60s' },
+   550→   550→      { name: 'Rosca Alternada com Halteres', sets: '3x10-12', rest: '45s' },
+   551→   551→      { name: 'Bíceps Scott Máquina', sets: '3x10-12', rest: '45s' },
+   552→   552→    ],
+   553→   553→  },
+   554→   554→  quarta: {
+   555→   555→    title: 'Quarta - Posterior',
+   556→   556→    emoji: '🔥',
+   557→   557→    color: 'from-orange-500 to-orange-600',
+   558→   558→    exercises: [
+   559→   559→      { name: 'Cadeira Flexora', sets: '4x12-15', rest: '60s' },
+   560→   560→      { name: 'Stiff', sets: '4x12-15', rest: '60s' },
+   561→   561→      { name: 'Mesa Flexora', sets: '4x12-15', rest: '60s' },
+   562→   562→      { name: 'Terra Sumô', sets: '4x8-10', rest: '90s' },
+   563→   563→      { name: 'Cadeira Abdutora', sets: '4x12-15', rest: '45s' },
+   564→   564→      { name: 'Panturrilha no Leg', sets: '4x15-20', rest: '45s' },
+   565→   565→    ],
+   566→   566→  },
+   567→   567→  quinta: {
+   568→   568→    title: 'Quinta - Ombro e Tríceps',
+   569→   569→    emoji: '🎯',
+   570→   570→    color: 'from-blue-500 to-blue-600',
+   571→   571→    exercises: [
+   572→   572→      { name: 'Supino Inclinado com Halteres', sets: '3x10-12', rest: '60s' },
+   573→   573→      { name: 'Desenvolvimento com Halteres', sets: '4x10-12', rest: '60s' },
+   574→   574→      { name: 'Elevação Lateral com Halteres', sets: '4x10-12', rest: '45s' },
+   575→   575→      { name: 'Remada Alta', sets: '4x10-12', rest: '60s' },
+   576→   576→      { name: 'Tríceps Francês com Halter', sets: '3x10-12', rest: '45s' },
+   577→   577→      { name: 'Tríceps Corda', sets: '3x10-12', rest: '45s' },
+   578→   578→    ],
+   579→   579→  },
+   580→   580→  sexta: {
+   581→   581→    title: 'Sexta - Glúteo',
+   582→   582→    emoji: '🍑',
+   583→   583→    color: 'from-pink-500 to-pink-600',
+   584→   584→    exercises: [
+   585→   585→      { name: 'Elevação Pélvica Máquina', sets: '4x10-12', rest: '60s' },
+   586→   586→      { name: 'Coice na Polia', sets: '4x12-15', rest: '60s' },
+   587→   587→      { name: 'Cadeira Abdutora', sets: '4x12-15', rest: '45s' },
+   588→   588→      { name: 'Búlgaro', sets: '4x12-15', rest: '60s' },
+   589→   589→      { name: 'Terra Sumô', sets: '4x8-10', rest: '90s' },
+   590→   590→      { name: 'Abdominal Máquina', sets: '3x10-12', rest: '45s' },
+   591→   591→    ],
+   592→   592→  },
+   593→   593→};
+   594→   594→
+   595→   595→// ============================================
+   596→   596→// TIPOS
+   597→   597→// ============================================
+   598→   598→interface Recipe {
+   599→   599→  id: string;
+   600→   600→  name: string;
+   601→   601→  description?: string;
+   602→   602→  category: string;
+   603→   603→  calories: number;
+   604→   604→  prepTime?: number;
+   605→   605→  ingredients: string;
+   606→   606→  instructions: string;
+   607→   607→  tips?: string;
+   608→   608→  isFavorite?: boolean;
+   609→   609→}
+   610→   610→
+   611→   611→interface Juice {
+   612→   612→  id: string;
+   613→   613→  name: string;
+   614→   614→  description?: string;
+   615→   615→  benefits: string;
+   616→   616→  ingredients: string;
+   617→   617→  instructions: string;
+   618→   618→  isFavorite?: boolean;
+   619→   619→}
+   620→   620→
+   621→   621→interface UserProgress {
+   622→   622→  phase1Lessons: number[];
+   623→   623→  phase2Lessons: number[];
+   624→   624→  phase3Lessons: number[];
+   625→   625→  phase4Lessons: number[];
+   626→   626→  exerciseAnswers: Record<string, string>;
+   627→   627→}
+   628→   628→
+   629→   629→// ============================================
+   630→   630→// ANIMAÇÕES
+   631→   631→// ============================================
+   632→   632→const fadeIn = {
+   633→   633→  initial: { opacity: 0, y: 20 },
+   634→   634→  animate: { opacity: 1, y: 0 },
+   635→   635→  exit: { opacity: 0, y: -20 }
+   636→   636→};
+   637→   637→
+   638→   638→// ============================================
+   639→   639→// COMPONENTE DE CONFETE
+   640→   640→// ============================================
+   641→   641→function Confetti({ show }: { show: boolean }) {
+   642→   642→  if (!show) return null;
+   643→   643→  
+   644→   644→  return (
+   645→   645→    <div className="fixed inset-0 pointer-events-none z-50">
+   646→   646→      {[...Array(50)].map((_, i) => (
+   647→   647→        <motion.div
+   648→   648→          key={i}
+   649→   649→          initial={{ opacity: 1, y: -20, x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 400), rotate: 0 }}
+   650→   650→          animate={{ opacity: 0, y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 100, rotate: Math.random() * 360 }}
+   651→   651→          transition={{ duration: 2 + Math.random() * 2, delay: Math.random() * 0.5 }}
+   652→   652→          className="absolute text-2xl"
+   653→   653→        >
+   654→   654→          {['🎉', '✨', '🌟', '💫', '🎊'][Math.floor(Math.random() * 5)]}
+   655→   655→        </motion.div>
+   656→   656→      ))}
+   657→   657→    </div>
+   658→   658→  );
+   659→   659→}
+   660→   660→
+   661→   661→// ============================================
+   662→   662→// LANDING PAGE - COM LOGIN EMAIL
+   663→   663→// ============================================
+   664→   664→function LandingPage() {
+   665→   665→  const { login } = useAppStore();
+   666→   666→  const [mode, setMode] = useState<'intro' | 'login' | 'register'>('intro');
+   667→   667→  const [step, setStep] = useState(1);
+   668→   668→  const [loading, setLoading] = useState(false);
+   669→   669→  const [error, setError] = useState('');
+   670→   670→  const [showPassword, setShowPassword] = useState(false);
+   671→   671→  
+   672→   672→  // Form data
+   673→   673→  const [name, setName] = useState('');
+   674→   674→  const [email, setEmail] = useState('');
+   675→   675→  const [password, setPassword] = useState('');
+   676→   676→  const [confirmPassword, setConfirmPassword] = useState('');
+   677→   677→  const [weight, setWeight] = useState('');
+   678→   678→  const [goalWeight, setGoalWeight] = useState('');
+   679→   679→
+   680→   680→  const handleLogin = async () => {
+   681→   681→    if (!email || !password) {
+   682→   682→      setError('Preencha todos os campos');
+   683→   683→      return;
+   684→   684→    }
+   685→   685→    setLoading(true);
+   686→   686→    setError('');
+   687→   687→    try {
+   688→   688→      const res = await fetch('/api/auth/login', {
+   689→   689→        method: 'POST',
+   690→   690→        headers: { 'Content-Type': 'application/json' },
+   691→   691→        body: JSON.stringify({ email, password }),
+   692→   692→      });
+   693→   693→      const data = await res.json();
+   694→   694→      if (!res.ok) {
+   695→   695→        setError(data.error || 'Erro ao fazer login');
+   696→   696→        setLoading(false);
+   697→   697→        return;
+   698→   698→      }
+   699→   699→      login(data.user, data.userId);
+   700→   700→    } catch (err) {
+   701→   701→      setError('Erro de conexão');
+   702→   702→      setLoading(false);
+   703→   703→    }
+   704→   704→  };
+   705→   705→
+   706→   706→  const handleRegister = async () => {
+   707→   707→    if (step < 3) {
+   708→   708→      if (step === 1) {
+   709→   709→        if (!name || !email || !password) {
+   710→   710→          setError('Preencha todos os campos');
+   711→   711→          return;
+   712→   712→        }
+   713→   713→        if (password !== confirmPassword) {
+   714→   714→          setError('As senhas não coincidem');
+   715→   715→          return;
+   716→   716→        }
+   717→   717→        if (password.length < 6) {
+   718→   718→          setError('A senha deve ter pelo menos 6 caracteres');
+   719→   719→          return;
+   720→   720→        }
+   721→   721→      }
+   722→   722→      if (step === 2 && !weight) {
+   723→   723→        setError('Informe seu peso atual');
+   724→   724→        return;
+   725→   725→      }
+   726→   726→      setStep(step + 1);
+   727→   727→      setError('');
+   728→   728→      return;
+   729→   729→    }
+   730→   730→
+   731→   731→    if (!goalWeight) {
+   732→   732→      setError('Informe sua meta de peso');
+   733→   733→      return;
+   734→   734→    }
+   735→   735→
+   736→   736→    setLoading(true);
+   737→   737→    setError('');
+   738→   738→    try {
+   739→   739→      const res = await fetch('/api/auth/register', {
+   740→   740→        method: 'POST',
+   741→   741→        headers: { 'Content-Type': 'application/json' },
+   742→   742→        body: JSON.stringify({
+   743→   743→          name,
+   744→   744→          email,
+   745→   745→          password,
+   746→   746→          weight: parseFloat(weight),
+   747→   747→          goalWeight: parseFloat(goalWeight),
+   748→   748→          objective: 'lose',
+   749→   749→        }),
+   750→   750→      });
+   751→   751→      const data = await res.json();
+   752→   752→      if (!res.ok) {
+   753→   753→        setError(data.error || 'Erro ao criar conta');
+   754→   754→        setLoading(false);
+   755→   755→        return;
+   756→   756→      }
+   757→   757→      login(data.user, data.userId);
+   758→   758→    } catch (err) {
+   759→   759→      setError('Erro de conexão');
+   760→   760→      setLoading(false);
+   761→   761→    }
+   762→   762→  };
+   763→   763→
+   764→   764→  return (
+   765→   765→    <motion.div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+   766→   766→      {/* Hero */}
+   767→   767→      <div className="relative overflow-hidden">
+   768→   768→        <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-transparent" />
+   769→   769→        <div className="relative max-w-lg mx-auto px-6 py-8">
+   770→   770→          <motion.div className="text-center" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
+   771→   771→            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl flex items-center justify-center shadow-xl">
+   772→   772→              <span className="text-4xl">🌱</span>
+   773→   773→            </div>
+   774→   774→            <h1 className="text-3xl font-bold text-gray-800 mb-2">Quebrando Ciclo</h1>
+   775→   775→            <p className="text-base text-gray-600">Sua jornada de transformação</p>
+   776→   776→          </motion.div>
+   777→   777→        </div>
+   778→   778→      </div>
+   779→   779→
+   780→   780→      {/* Progress Steps */}
+   781→   781→      {mode === 'register' && (
+   782→   782→        <div className="flex items-center justify-center gap-2 mb-4">
+   783→   783→          {[1, 2, 3].map((s) => (
+   784→   784→            <div key={s} className="flex items-center">
+   785→   785→              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+   786→   786→                s < step ? 'bg-green-500 text-white' : s === step ? 'bg-green-500 text-white shadow-lg' : 'bg-gray-200 text-gray-400'
+   787→   787→              }`}>
+   788→   788→                {s < step ? '✓' : s}
+   789→   789→              </div>
+   790→   790→              {s < 3 && <div className={`w-10 h-1 mx-1 rounded ${s < step ? 'bg-green-500' : 'bg-gray-200'}`} />}
+   791→   791→            </div>
+   792→   792→          ))}
+   793→   793→        </div>
+   794→   794→      )}
+   795→   795→
+   796→   796→      {/* Intro Screen */}
+   797→   797→      {mode === 'intro' && (
+   798→   798→        <div className="max-w-lg mx-auto px-6">
+   799→   799→          <div className="space-y-3 mb-6">
+   800→   800→            {journeyPhases.slice(0, 4).map((phase, index) => (
+   801→   801→              <motion.div 
+   802→   802→                key={phase.id}
+   803→   803→                initial={{ x: -20, opacity: 0 }} 
+   804→   804→                animate={{ x: 0, opacity: 1 }} 
+   805→   805→                transition={{ delay: 0.1 * index }}
+   806→   806→                className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100"
+   807→   807→              >
+   808→   808→                <div className={`w-12 h-12 bg-gradient-to-r ${phase.color} rounded-xl flex items-center justify-center text-xl shadow-sm text-white`}>
+   809→   809→                  {phase.emoji}
+   810→   810→                </div>
+   811→   811→                <div className="flex-1">
+   812→   812→                  <span className="text-xs text-gray-400">Fase {phase.id}</span>
+   813→   813→                  <h3 className="font-semibold text-gray-800 text-sm">{phase.title}</h3>
+   814→   814→                </div>
+   815→   815→              </motion.div>
+   816→   816→            ))}
+   817→   817→          </div>
+   818→   818→
+   819→   819→          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
+   820→   820→            <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Bem-vinda! 💚</h3>
+   821→   821→            <div className="space-y-3">
+   822→   822→              <Button onClick={() => setMode('login')} className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-xl font-semibold">
+   823→   823→                <Mail className="mr-2 h-5 w-5" /> Entrar com Email
+   824→   824→              </Button>
+   825→   825→              <Button onClick={() => setMode('register')} variant="outline" className="w-full h-12 rounded-xl font-semibold">
+   826→   826→                <User className="mr-2 h-5 w-5" /> Criar Conta
+   827→   827→              </Button>
+   828→   828→            </div>
+   829→   829→            
+   830→   830→            {/* Admin Access Link */}
+   831→   831→            <div className="mt-4 pt-4 border-t border-gray-100">
+   832→   832→              <button
+   833→   833→                onClick={() => {
+   834→   834→                  localStorage.setItem('adminLoggedIn', 'true');
+   835→   835→                  window.location.reload();
+   836→   836→                }}
+   837→   837→                className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-amber-600 transition-colors"
+   838→   838→              >
+   839→   839→                <Shield className="h-4 w-4" />
+   840→   840→                Acesso Admin
+   841→   841→              </button>
+   842→   842→            </div>
+   843→   843→            
+   844→   844→            <p className="text-xs text-gray-400 text-center mt-3">
+   845→   845→              Ao continuar, você aceita nossos termos de uso
+   846→   846→            </p>
+   847→   847→          </motion.div>
+   848→   848→        </div>
+   849→   849→      )}
+   850→   850→
+   851→   851→      {/* Login Screen */}
+   852→   852→      {mode === 'login' && (
+   853→   853→        <div className="max-w-lg mx-auto px-6">
+   854→   854→          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+   855→   855→            <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Entrar 👋</h3>
+   856→   856→            
+   857→   857→            {error && (
+   858→   858→              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+   859→   859→                <XCircle className="h-4 w-4 flex-shrink-0" /> {error}
+   860→   860→              </div>
+   861→   861→            )}
+   862→   862→
+   863→   863→            <div className="space-y-4">
+   864→   864→              <div>
+   865→   865→                <Label className="text-gray-600">Email</Label>
+   866→   866→                <div className="relative mt-1">
+   867→   867→                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+   868→   868→                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10 h-12" />
+   869→   869→                </div>
+   870→   870→              </div>
+   871→   871→              <div>
+   872→   872→                <Label className="text-gray-600">Senha</Label>
+   873→   873→                <div className="relative mt-1">
+   874→   874→                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+   875→   875→                  <Input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sua senha" className="pl-10 pr-10 h-12" />
+   876→   876→                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+   877→   877→                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+   878→   878→                  </button>
+   879→   879→                </div>
+   880→   880→              </div>
+   881→   881→              <Button onClick={handleLogin} disabled={loading} className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600">
+   882→   882→                {loading ? 'Entrando...' : 'Entrar'}
+   883→   883→              </Button>
+   884→   884→              <button onClick={() => { setMode('intro'); setError(''); }} className="w-full text-sm text-gray-500 hover:text-gray-700">
+   885→   885→                Voltar
+   886→   886→              </button>
+   887→   887→            </div>
+   888→   888→          </motion.div>
+   889→   889→        </div>
+   890→   890→      )}
+   891→   891→
+   892→   892→      {/* Register Screen */}
+   893→   893→      {mode === 'register' && (
+   894→   894→        <div className="max-w-lg mx-auto px-6">
+   895→   895→          <motion.div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-100" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} key={step}>
+   896→   896→            {/* Step 1 */}
+   897→   897→            {step === 1 && (
+   898→   898→              <>
+   899→   899→                <h3 className="text-lg font-bold text-gray-800 text-center mb-4">Criar Conta 🌟</h3>
+   900→   900→                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+   901→   901→                <div className="space-y-3">
+   902→   902→                  <div>
+   903→   903→                    <Label className="text-gray-600 text-sm">Nome</Label>
+   904→   904→                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-1 h-11" />
+   905→   905→                  </div>
+   906→   906→                  <div>
+   907→   907→                    <Label className="text-gray-600 text-sm">Email</Label>
+   908→   908→                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1 h-11" />
+   909→   909→                  </div>
+   910→   910→                  <div>
+   911→   911→                    <Label className="text-gray-600 text-sm">Senha</Label>
+   912→   912→                    <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="mt-1 h-11" />
+   913→   913→                  </div>
+   914→   914→                  <div>
+   915→   915→                    <Label className="text-gray-600 text-sm">Confirmar Senha</Label>
+   916→   916→                    <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repita a senha" className="mt-1 h-11" />
+   917→   917→                  </div>
+   918→   918→                </div>
+   919→   919→              </>
+   920→   920→            )}
+   921→   921→
+   922→   922→            {/* Step 2 */}
+   923→   923→            {step === 2 && (
+   924→   924→              <>
+   925→   925→                <div className="text-center mb-4">
+   926→   926→                  <div className="w-14 h-14 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-3">
+   927→   927→                    <span className="text-2xl">⚖️</span>
+   928→   928→                  </div>
+   929→   929→                  <h3 className="text-lg font-bold">Qual é seu peso atual?</h3>
+   930→   930→                  <p className="text-gray-500 text-sm">Isso nos ajuda a calcular sua meta de água</p>
+   931→   931→                </div>
+   932→   932→                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+   933→   933→                <div className="space-y-3">
+   934→   934→                  <div>
+   935→   935→                    <Label className="text-gray-600 text-sm">Peso atual (kg)</Label>
+   936→   936→                    <Input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ex: 70" className="mt-1 h-14 text-lg text-center" />
+   937→   937→                  </div>
+   938→   938→                  {weight && (
+   939→   939→                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+   940→   940→                      <p className="text-sm text-blue-600">💧 <strong>Meta de água:</strong> {Math.ceil((parseFloat(weight) * 35) / 250)} copos/dia</p>
+   941→   941→                      <p className="text-xs text-blue-500">({Math.round(parseFloat(weight) * 35)}ml = peso × 35ml)</p>
+   942→   942→                    </div>
+   943→   943→                  )}
+   944→   944→                </div>
+   945→   945→              </>
+   946→   946→            )}
+   947→   947→
+   948→   948→            {/* Step 3 */}
+   949→   949→            {step === 3 && (
+   950→   950→              <>
+   951→   951→                <div className="text-center mb-4">
+   952→   952→                  <div className="w-14 h-14 mx-auto bg-amber-100 rounded-full flex items-center justify-center mb-3">
+   953→   953→                    <Target className="h-7 w-7 text-amber-600" />
+   954→   954→                  </div>
+   955→   955→                  <h3 className="text-lg font-bold">Qual é sua meta?</h3>
+   956→   956→                  <p className="text-gray-500 text-sm">O objetivo que deseja alcançar</p>
+   957→   957→                </div>
+   958→   958→                {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"><XCircle className="h-4 w-4" /> {error}</div>}
+   959→   959→                <div className="space-y-3">
+   960→   960→                  <div>
+   961→   961→                    <Label className="text-gray-600 text-sm">Peso meta (kg)</Label>
+   962→   962→                    <Input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} placeholder="Ex: 60" className="mt-1 h-14 text-lg text-center" />
+   963→   963→                  </div>
+   964→   964→                  {weight && goalWeight && (
+   965→   965→                    <div className="bg-gradient-to-r from-green-50 to-amber-50 rounded-xl p-4 text-center">
+   966→   966→                      <p className="text-sm text-gray-700">🎯 <strong>Olá, {name}!</strong></p>
+   967→   967→                      <p className="text-sm text-gray-600 mt-2">Você vai sair de <strong>{weight}kg</strong> e chegar a <strong>{goalWeight}kg</strong></p>
+   968→   968→                      <p className="text-lg font-bold text-green-600 mt-2">Perda de {(parseFloat(weight) - parseFloat(goalWeight)).toFixed(1)}kg 🌟</p>
+   969→   969→                    </div>
+   970→   970→                  )}
+   971→   971→                </div>
+   972→   972→              </>
+   973→   973→            )}
+   974→   974→
+   975→   975→            {/* Buttons */}
+   976→   976→            <div className="flex gap-3 mt-5">
+   977→   977→              {step > 1 ? (
+   978→   978→                <>
+   979→   979→                  <Button onClick={() => setStep(step - 1)} variant="outline" className="flex-1 h-11" disabled={loading}>Voltar</Button>
+   980→   980→                  <Button onClick={handleRegister} className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600" disabled={loading}>
+   981→   981→                    {loading ? 'Criando...' : step === 3 ? 'Iniciar Jornada' : 'Continuar'}
+   982→   982→                  </Button>
+   983→   983→                </>
+   984→   984→              ) : (
+   985→   985→                <>
+   986→   986→                  <Button onClick={() => { setMode('intro'); setError(''); }} variant="outline" className="flex-1 h-11">Voltar</Button>
+   987→   987→                  <Button onClick={handleRegister} className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600">Continuar</Button>
+   988→   988→                </>
+   989→   989→              )}
+   990→   990→            </div>
+   991→   991→          </motion.div>
+   992→   992→        </div>
+   993→   993→      )}
+   994→   994→
+   995→   995→      <div className="h-8" />
+   996→   996→    </motion.div>
+   997→   997→  );
+   998→   998→}
+   999→   999→
+  1000→  1000→// ============================================
+  1001→  1001→// DASHBOARD PRINCIPAL
+  1002→  1002→// ============================================
+  1003→  1003→function Dashboard() {
+  1004→  1004→  const { user, userId, setCurrentView, setSelectedPhase, updateUserProgress } = useAppStore();
+  1005→  1005→  const { theme, toggleTheme } = useThemeStore();
+  1006→  1006→  const [todayCheck, setTodayCheck] = useState({
+  1007→  1007→    drankWater: false, followedMeal: false, readContent: false, exercised: false, mindfulness: false,
+  1008→  1008→  });
+  1009→  1009→  const [water, setWater] = useState({ glasses: 0, goal: 8 });
+  1010→  1010→  const [showWaterModal, setShowWaterModal] = useState(false);
+  1011→  1011→  const [showPWABanner, setShowPWABanner] = useState(false);
+  1012→  1012→  const [userProgress, setUserProgress] = useState<UserProgress>({
+  1013→  1013→    phase1Lessons: [],
+  1014→  1014→    phase2Lessons: [],
+  1015→  1015→    phase3Lessons: [],
+  1016→  1016→    phase4Lessons: [],
+  1017→  1017→    exerciseAnswers: {},
+  1018→  1018→  });
+  1019→  1019→  const [apiProgress, setApiProgress] = useState<{
+  1020→  1020→    xp: number;
+  1021→  1021→    level: number;
+  1022→  1022→    streak: number;
+  1023→  1023→    totalDays: number;
+  1024→  1024→  } | null>(null);
+  1025→  1025→
+  1026→  1026→  const randomQuoteIndex = Math.floor(Math.random() * motivationalPhrases.length);
+  1027→  1027→
+  1028→  1028→  // Check if PWA banner should be shown
+  1029→  1029→  useEffect(() => {
+  1030→  1030→    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+  1031→  1031→    if (!dismissed && typeof window !== 'undefined') {
+  1032→  1032→      // Show banner after 5 seconds
+  1033→  1033→      const timer = setTimeout(() => setShowPWABanner(true), 5000);
+  1034→  1034→      return () => clearTimeout(timer);
+  1035→  1035→    }
+  1036→  1036→  }, []);
+  1037→  1037→
+  1038→  1038→  // Apply theme
+  1039→  1039→  useEffect(() => {
+  1040→  1040→    applyTheme(theme);
+  1041→  1041→  }, [theme]);
+  1042→  1042→
+  1043→  1043→  const dismissPWABanner = () => {
+  1044→  1044→    setShowPWABanner(false);
+  1045→  1045→    localStorage.setItem('pwa-banner-dismissed', 'true');
+  1046→  1046→  };
+  1047→  1047→
+  1048→  1048→  const fetchTodayCheck = useCallback(async () => {
+  1049→  1049→    try {
+  1050→  1050→      const res = await fetch('/api/user/checkin', { headers: { 'x-user-id': userId || '' } });
+  1051→  1051→      setTodayCheck(await res.json());
+  1052→  1052→    } catch (error) { console.error('Erro:', error); }
+  1053→  1053→  }, [userId]);
+  1054→  1054→
+  1055→  1055→  const fetchWater = useCallback(async () => {
+  1056→  1056→    try {
+  1057→  1057→      const res = await fetch('/api/water', { headers: { 'x-user-id': userId || '' } });
+  1058→  1058→      const data = await res.json();
+  1059→  1059→      setWater({ glasses: data.glasses, goal: data.goal });
+  1060→  1060→    } catch (error) { console.error('Erro:', error); }
+  1061→  1061→  }, [userId]);
+  1062→  1062→
+  1063→  1063→  const fetchProgress = useCallback(async () => {
+  1064→  1064→    try {
+  1065→  1065→      const res = await fetch('/api/user/progress', { headers: { 'x-user-id': userId || '' } });
+  1066→  1066→      if (res.ok) {
+  1067→  1067→        const data = await res.json();
+  1068→  1068→        setApiProgress({
+  1069→  1069→          xp: data.xp || 0,
+  1070→  1070→          level: data.level || 1,
+  1071→  1071→          streak: data.streak || 0,
+  1072→  1072→          totalDays: data.totalDays || 0,
+  1073→  1073→        });
+  1074→  1074→        updateUserProgress({
+  1075→  1075→          xp: data.xp || 0,
+  1076→  1076→          level: data.level || 1,
+  1077→  1077→          streak: data.streak || 0,
+  1078→  1078→          totalDays: data.totalDays || 0,
+  1079→  1079→        });
+  1080→  1080→      }
+  1081→  1081→    } catch (error) { console.error('Erro ao buscar progresso:', error); }
+  1082→  1082→  }, [userId, updateUserProgress]);
+  1083→  1083→
+  1084→  1084→  useEffect(() => {
+  1085→  1085→    if (userId) {
+  1086→  1086→      fetchTodayCheck();
+  1087→  1087→      fetchWater();
+  1088→  1088→      fetchProgress();
+  1089→  1089→    }
+  1090→  1090→    // Load user progress from localStorage
+  1091→  1091→    const saved = localStorage.getItem('quebrando-ciclo-progress');
+  1092→  1092→    if (saved) setUserProgress(JSON.parse(saved));
+  1093→  1093→  }, [fetchTodayCheck, fetchWater, fetchProgress, userId]);
+  1094→  1094→
+  1095→  1095→  const handleCheck = async (key: keyof typeof todayCheck) => {
+  1096→  1096→    const newValue = !todayCheck[key];
+  1097→  1097→    setTodayCheck({ ...todayCheck, [key]: newValue });
+  1098→  1098→    try {
+  1099→  1099→      await fetch('/api/user/checkin', {
+  1100→  1100→        method: 'POST',
+  1101→  1101→        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+  1102→  1102→        body: JSON.stringify({ ...todayCheck, [key]: newValue }),
+  1103→  1103→      });
+  1104→  1104→      // Refresh progress after check-in
+  1105→  1105→      fetchProgress();
+  1106→  1106→    } catch (error) { console.error('Erro:', error); }
+  1107→  1107→  };
+  1108→  1108→
+  1109→  1109→  const handleWater = async (increment: number) => {
+  1110→  1110→    const newGlasses = Math.max(0, water.glasses + increment);
+  1111→  1111→    setWater({ ...water, glasses: newGlasses });
+  1112→  1112→    try {
+  1113→  1113→      await fetch('/api/water', {
+  1114→  1114→        method: 'POST',
+  1115→  1115→        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+  1116→  1116→        body: JSON.stringify({ glasses: newGlasses }),
+  1117→  1117→      });
+  1118→  1118→    } catch (error) { console.error('Erro:', error); }
+  1119→  1119→  };
+  1120→  1120→
+  1121→  1121→  // Use API progress if available, otherwise fall back to user store
+  1122→  1122→  const displayXp = apiProgress?.xp ?? user?.progress?.xp ?? 0;
+  1123→  1123→  const displayLevel = apiProgress?.level ?? user?.progress?.level ?? 1;
+  1124→  1124→  const displayStreak = apiProgress?.streak ?? user?.progress?.streak ?? 0;
+  1125→  1125→
+  1126→  1126→  const quote = motivationalPhrases[randomQuoteIndex];
+  1127→  1127→  const checks = [
+  1128→  1128→    { key: 'drankWater' as const, label: 'Água', emoji: '💧' },
+  1129→  1129→    { key: 'followedMeal' as const, label: 'Dieta', emoji: '🥗' },
+  1130→  1130→    { key: 'readContent' as const, label: 'Conteúdo', emoji: '📚' },
+  1131→  1131→    { key: 'exercised' as const, label: 'Treino', emoji: '🏃' },
+  1132→  1132→    { key: 'mindfulness' as const, label: 'Mente', emoji: '🧘' },
+  1133→  1133→  ];
+  1134→  1134→  const completedChecks = Object.values(todayCheck).filter(Boolean).length;
+  1135→  1135→  const xpToday = completedChecks * 10;
+  1136→  1136→
+  1137→  1137→  // Calculate total progress
+  1138→  1138→  const totalLessons = journeyPhases.reduce((acc, p) => acc + p.lessons.length, 0);
+  1139→  1139→  const completedLessons = userProgress.phase1Lessons.length + userProgress.phase2Lessons.length + 
+  1140→  1140→                          userProgress.phase3Lessons.length + userProgress.phase4Lessons.length;
+  1141→  1141→  const progressPercent = Math.round((completedLessons / totalLessons) * 100);
+  1142→  1142→
+  1143→  1143→  return (
+  1144→  1144→    <motion.div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+  1145→  1145→      {/* PWA Install Banner */}
+  1146→  1146→      <AnimatePresence>
+  1147→  1147→        {showPWABanner && (
+  1148→  1148→          <motion.div
+  1149→  1149→            initial={{ y: -100, opacity: 0 }}
+  1150→  1150→            animate={{ y: 0, opacity: 1 }}
+  1151→  1151→            exit={{ y: -100, opacity: 0 }}
+  1152→  1152→            className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 shadow-lg"
+  1153→  1153→          >
+  1154→  1154→            <div className="max-w-lg mx-auto flex items-center gap-3">
+  1155→  1155→              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+  1156→  1156→                <Smartphone className="h-5 w-5" />
+  1157→  1157→              </div>
+  1158→  1158→              <div className="flex-1 min-w-0">
+  1159→  1159→                <p className="font-semibold text-sm">📱 Instale o App!</p>
+  1160→  1160→                <p className="text-xs text-purple-100 truncate">Adicione à tela inicial para acesso rápido</p>
+  1161→  1161→              </div>
+  1162→  1162→              <button
+  1163→  1163→                onClick={dismissPWABanner}
+  1164→  1164→                className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0"
+  1165→  1165→              >
+  1166→  1166→                <X className="h-4 w-4" />
+  1167→  1167→              </button>
+  1168→  1168→            </div>
+  1169→  1169→            <div className="max-w-lg mx-auto mt-3 flex gap-2">
+  1170→  1170→              <div className="flex-1 bg-white/10 rounded-lg p-2 text-xs text-center">
+  1171→  1171→                <strong>iPhone:</strong> Toque em <Share className="h-3 w-3 inline mx-1" /> → "Adicionar à Tela Início"
+  1172→  1172→              </div>
+  1173→  1173→              <div className="flex-1 bg-white/10 rounded-lg p-2 text-xs text-center">
+  1174→  1174→                <strong>Android:</strong> Menu ⋮ → "Adicionar à tela inicial"
+  1175→  1175→              </div>
+  1176→  1176→            </div>
+  1177→  1177→          </motion.div>
+  1178→  1178→        )}
+  1179→  1179→      </AnimatePresence>
+  1180→  1180→
+  1181→  1181→      {/* Header */}
+  1182→  1182→      <div className={`bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-b-3xl ${showPWABanner ? 'mt-28' : ''}`}>
+  1183→  1183→        <div className="flex items-center justify-between mb-4">
+  1184→  1184→          <div>
+  1185→  1185→            <p className="text-green-100 text-sm">Olá,</p>
+  1186→  1186→            <h1 className="text-2xl font-bold">{user?.name || 'Usuária'} ✨</h1>
+  1187→  1187→          </div>
+  1188→  1188→          <div className="flex items-center gap-2">
+  1189→  1189→            <button 
+  1190→  1190→              onClick={toggleTheme} 
+  1191→  1191→              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+  1192→  1192→              title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+  1193→  1193→            >
+  1194→  1194→              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+  1195→  1195→            </button>
+  1196→  1196→            <button onClick={() => setCurrentView('profile')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+  1197→  1197→              <User className="h-5 w-5" />
+  1198→  1198→            </button>
+  1199→  1199→          </div>
+  1200→  1200→        </div>
+  1201→  1201→        
+  1202→  1202→        {/* Progress Bar */}
+  1203→  1203→        <div className="bg-white/10 rounded-2xl p-4">
+  1204→  1204→          <div className="flex items-center justify-between mb-2">
+  1205→  1205→            <div className="flex items-center gap-2">
+  1206→  1206→              <span className="text-sm">Nível {displayLevel}</span>
+  1207→  1207→              <span className="text-xs bg-yellow-400/20 text-yellow-200 px-2 py-0.5 rounded-full">
+  1208→  1208→                {displayXp} XP
+  1209→  1209→              </span>
+  1210→  1210→            </div>
+  1211→  1211→            <span className="text-xs">{progressPercent}% completo</span>
+  1212→  1212→          </div>
+  1213→  1213→          <Progress value={(displayXp % 100)} className="h-2 bg-white/20" />
+  1214→  1214→          <div className="flex items-center justify-between mt-2">
+  1215→  1215→            <span className="text-xs text-green-100">🔥 {displayStreak} dias seguidos</span>
+  1216→  1216→            <span className="text-xs text-green-100">{completedLessons}/{totalLessons} lições</span>
+  1217→  1217→          </div>
+  1218→  1218→        </div>
+  1219→  1219→      </div>
+  1220→  1220→      
+  1221→  1221→      <div className="p-4 space-y-6">
+  1222→  1222→        {/* Quote */}
+  1223→  1223→        {quote && (
+  1224→  1224→          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-0 shadow-md">
+  1225→  1225→            <CardContent className="p-4">
+  1226→  1226→              <p className="text-gray-700 italic text-center leading-relaxed text-sm">"{quote.quote}"</p>
+  1227→  1227→            </CardContent>
+  1228→  1228→          </Card>
+  1229→  1229→        )}
+  1230→  1230→        
+  1231→  1231→        {/* Daily Tasks */}
+  1232→  1232→        <Card className="shadow-md">
+  1233→  1233→          <CardContent className="p-4">
+  1234→  1234→            <div className="flex items-center justify-between mb-3">
+  1235→  1235→              <h3 className="font-semibold flex items-center gap-2">
+  1236→  1236→                <Target className="h-5 w-5 text-green-500" /> Missões de Hoje
+  1237→  1237→              </h3>
+  1238→  1238→              <span className="text-sm text-green-500 font-medium">+{xpToday} XP</span>
+  1239→  1239→            </div>
+  1240→  1240→            <div className="grid grid-cols-5 gap-2">
+  1241→  1241→              {checks.map((check) => (
+  1242→  1242→                <button key={check.key} onClick={() => handleCheck(check.key)}
+  1243→  1243→                  className={`flex flex-col items-center p-2 rounded-xl transition-all ${todayCheck[check.key] ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-transparent'}`}>
+  1244→  1244→                  <span className="text-xl">{check.emoji}</span>
+  1245→  1245→                  <span className="text-xs mt-1 text-gray-600">{check.label}</span>
+  1246→  1246→                  {todayCheck[check.key] && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><Check className="h-3 w-3 text-green-500" /></motion.div>}
+  1247→  1247→                </button>
+  1248→  1248→              ))}
+  1249→  1249→            </div>
+  1250→  1250→          </CardContent>
+  1251→  1251→        </Card>
+  1252→  1252→        
+  1253→  1253→        {/* Water */}
+  1254→  1254→        <Card className="shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowWaterModal(true)}>
+  1255→  1255→          <CardContent className="p-4">
+  1256→  1256→            <div className="flex items-center justify-between">
+  1257→  1257→              <div className="flex items-center gap-3">
+  1258→  1258→                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">💧</div>
+  1259→  1259→                <div>
+  1260→  1260→                  <p className="font-semibold text-gray-800">Hidratação</p>
+  1261→  1261→                  <p className="text-sm text-gray-500">{water.glasses}/{water.goal} copos</p>
+  1262→  1262→                </div>
+  1263→  1263→              </div>
+  1264→  1264→              <Progress value={(water.glasses / water.goal) * 100} className="h-2 w-16" />
+  1265→  1265→            </div>
+  1266→  1266→          </CardContent>
+  1267→  1267→        </Card>
+  1268→  1268→        
+  1269→  1269→        {/* Journey Progress */}
+  1270→  1270→        <div>
+  1271→  1271→          <h3 className="font-bold text-gray-800 mb-3">📍 Sua Jornada</h3>
+  1272→  1272→          <div className="space-y-2">
+  1273→  1273→            {journeyPhases.map((phase) => {
+  1274→  1274→              const completedPhaseLessons = (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [];
+  1275→  1275→              const isComplete = completedPhaseLessons.length === phase.lessons.length && phase.lessons.length > 0;
+  1276→  1276→              const isInProgress = completedPhaseLessons.length > 0;
+  1277→  1277→              
+  1278→  1278→              return (
+  1279→  1279→                <Card 
+  1280→  1280→                  key={phase.id}
+  1281→  1281→                  className={`shadow-sm cursor-pointer active:scale-[0.99] transition-transform ${isComplete ? 'bg-green-50 border-green-200' : ''}`}
+  1282→  1282→                  onClick={() => { setSelectedPhase(phase.id); setCurrentView('phases'); }}
+  1283→  1283→                >
+  1284→  1284→                  <CardContent className="p-3">
+  1285→  1285→                    <div className="flex items-center gap-3">
+  1286→  1286→                      <div className={`w-12 h-12 bg-gradient-to-r ${phase.color} rounded-xl flex items-center justify-center text-xl shadow-sm ${isComplete ? 'opacity-100' : ''}`}>
+  1287→  1287→                        {isComplete ? '✅' : phase.emoji}
+  1288→  1288→                      </div>
+  1289→  1289→                      <div className="flex-1">
+  1290→  1290→                        <div className="flex items-center gap-2">
+  1291→  1291→                          <span className="text-xs text-gray-400">Fase {phase.id}</span>
+  1292→  1292→                          {isInProgress && !isComplete && (
+  1293→  1293→                            <span className="text-xs text-green-500">Em progresso</span>
+  1294→  1294→                          )}
+  1295→  1295→                        </div>
+  1296→  1296→                        <h4 className="font-semibold text-gray-800">{phase.title}</h4>
+  1297→  1297→                        <div className="flex items-center gap-2 mt-1">
+  1298→  1298→                          <Progress value={phase.lessons.length > 0 ? (completedPhaseLessons.length / phase.lessons.length) * 100 : 0} className="h-1.5 flex-1" />
+  1299→  1299→                          <span className="text-xs text-gray-400">{completedPhaseLessons.length}/{phase.lessons.length}</span>
+  1300→  1300→                        </div>
+  1301→  1301→                      </div>
+  1302→  1302→                      <ChevronRight className="h-5 w-5 text-gray-400" />
+  1303→  1303→                    </div>
+  1304→  1304→                  </CardContent>
+  1305→  1305→                </Card>
+  1306→  1306→              );
+  1307→  1307→            })}
+  1308→  1308→          </div>
+  1309→  1309→        </div>
+  1310→  1310→        
+  1311→  1311→        {/* Quick Access */}
+  1312→  1312→        <div className="grid grid-cols-2 gap-3">
+  1313→  1313→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('nutrition')}>
+  1314→  1314→            <CardContent className="p-3 text-center">
+  1315→  1315→              <div className="w-10 h-10 mx-auto bg-green-100 rounded-xl flex items-center justify-center text-xl">🥗</div>
+  1316→  1316→              <p className="font-medium text-sm mt-2">Nutrição</p>
+  1317→  1317→              <p className="text-xs text-gray-500">Receitas e Sucos</p>
+  1318→  1318→            </CardContent>
+  1319→  1319→          </Card>
+  1320→  1320→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('mealplan')}>
+  1321→  1321→            <CardContent className="p-3 text-center">
+  1322→  1322→              <div className="w-10 h-10 mx-auto bg-amber-100 rounded-xl flex items-center justify-center text-xl">📋</div>
+  1323→  1323→              <p className="font-medium text-sm mt-2">Plano 1500kcal</p>
+  1324→  1324→              <p className="text-xs text-gray-500">Menu completo</p>
+  1325→  1325→            </CardContent>
+  1326→  1326→          </Card>
+  1327→  1327→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('workout')}>
+  1328→  1328→            <CardContent className="p-3 text-center">
+  1329→  1329→              <div className="w-10 h-10 mx-auto bg-purple-100 rounded-xl flex items-center justify-center text-xl">💪</div>
+  1330→  1330→              <p className="font-medium text-sm mt-2">Ficha de Treino</p>
+  1331→  1331→              <p className="text-xs text-gray-500">5 dias</p>
+  1332→  1332→            </CardContent>
+  1333→  1333→          </Card>
+  1334→  1334→          <Card className="shadow-sm cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setCurrentView('phases')}>
+  1335→  1335→            <CardContent className="p-3 text-center">
+  1336→  1336→              <div className="w-10 h-10 mx-auto bg-blue-100 rounded-xl flex items-center justify-center text-xl">📚</div>
+  1337→  1337→              <p className="font-medium text-sm mt-2">Jornada</p>
+  1338→  1338→              <p className="text-xs text-gray-500">4 fases</p>
+  1339→  1339→            </CardContent>
+  1340→  1340→          </Card>
+  1341→  1341→        </div>
+  1342→  1342→      </div>
+  1343→  1343→      
+  1344→  1344→      {/* Water Modal */}
+  1345→  1345→      <AnimatePresence>
+  1346→  1346→        {showWaterModal && (
+  1347→  1347→          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowWaterModal(false)}>
+  1348→  1348→            <motion.div className="bg-white rounded-t-3xl w-full max-w-lg p-6" initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} onClick={(e) => e.stopPropagation()}>
+  1349→  1349→              <div className="text-center mb-6">
+  1350→  1350→                <div className="text-5xl mb-3">💧</div>
+  1351→  1351→                <h3 className="text-xl font-bold">Hidratação</h3>
+  1352→  1352→                <p className="text-gray-500">Meta: {water.goal} copos por dia</p>
+  1353→  1353→              </div>
+  1354→  1354→              <div className="flex items-center justify-center gap-4 mb-6">
+  1355→  1355→                <Button variant="outline" size="lg" onClick={() => handleWater(-1)} className="rounded-full w-16 h-16"><Minus className="h-6 w-6" /></Button>
+  1356→  1356→                <div className="text-5xl font-bold text-blue-500 w-24 text-center">{water.glasses}</div>
+  1357→  1357→                <Button size="lg" onClick={() => handleWater(1)} className="rounded-full w-16 h-16 bg-blue-500 hover:bg-blue-600"><Plus className="h-6 w-6" /></Button>
+  1358→  1358→              </div>
+  1359→  1359→              <Progress value={(water.glasses / water.goal) * 100} className="h-3 mb-2" />
+  1360→  1360→              <p className="text-center text-sm text-gray-500">{(water.glasses * 250)}ml de {(water.goal * 250)}ml</p>
+  1361→  1361→              <Button onClick={() => setShowWaterModal(false)} className="w-full mt-6 h-12 rounded-xl">Confirmar</Button>
+  1362→  1362→            </motion.div>
+  1363→  1363→          </motion.div>
+  1364→  1364→        )}
+  1365→  1365→      </AnimatePresence>
+  1366→  1366→      
+  1367→  1367→      <BottomNav />
+  1368→  1368→    </motion.div>
+  1369→  1369→  );
+  1370→  1370→}
+  1371→  1371→
+  1372→  1372→// ============================================
+  1373→  1373→// BOTTOM NAVIGATION
+  1374→  1374→// ============================================
+  1375→  1375→function BottomNav() {
+  1376→  1376→  const { currentView, setCurrentView } = useAppStore();
+  1377→  1377→  const navItems = [
+  1378→  1378→    { view: 'dashboard' as const, icon: Home, label: 'Início' },
+  1379→  1379→    { view: 'phases' as const, icon: BookOpen, label: 'Jornada' },
+  1380→  1380→    { view: 'nutrition' as const, icon: Utensils, label: 'Nutrição' },
+  1381→  1381→    { view: 'achievements' as const, icon: Trophy, label: 'Conquistas' },
+  1382→  1382→    { view: 'profile' as const, icon: User, label: 'Perfil' },
+  1383→  1383→  ];
+  1384→  1384→  
+  1385→  1385→  return (
+  1386→  1386→    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+  1387→  1387→      <div className="flex justify-around items-center py-2 max-w-lg mx-auto">
+  1388→  1388→        {navItems.map((item) => (
+  1389→  1389→          <button key={item.view} onClick={() => setCurrentView(item.view)}
+  1390→  1390→            className={`flex flex-col items-center px-4 py-2 rounded-xl transition-all ${currentView === item.view ? 'text-green-600' : 'text-gray-400'}`}>
+  1391→  1391→            <item.icon className="h-6 w-6" />
+  1392→  1392→            <span className="text-xs mt-1">{item.label}</span>
+  1393→  1393→          </button>
+  1394→  1394→        ))}
+  1395→  1395→      </div>
+  1396→  1396→    </div>
+  1397→  1397→  );
+  1398→  1398→}
+  1399→  1399→
+  1400→  1400→// ============================================
+  1401→  1401→// PHASES SCREEN (JORNADA)
+  1402→  1402→// ============================================
+  1403→  1403→function PhasesScreen() {
+  1404→  1404→  const { currentView, setCurrentView, selectedPhase, setSelectedPhase } = useAppStore();
+  1405→  1405→  const [userProgress, setUserProgress] = useState<UserProgress>(() => {
+  1406→  1406→    if (typeof window !== 'undefined') {
+  1407→  1407→      const saved = localStorage.getItem('quebrando-ciclo-progress');
+  1408→  1408→      if (saved) return JSON.parse(saved);
+  1409→  1409→    }
+  1410→  1410→    return {
+  1411→  1411→      phase1Lessons: [],
+  1412→  1412→      phase2Lessons: [],
+  1413→  1413→      phase3Lessons: [],
+  1414→  1414→      phase4Lessons: [],
+  1415→  1415→      exerciseAnswers: {},
+  1416→  1416→    };
+  1417→  1417→  });
+  1418→  1418→  // Lesson detail state - always declared at top level
+  1419→  1419→  const [currentLesson, setCurrentLesson] = useState(0);
+  1420→  1420→  const [answers, setAnswers] = useState<Record<number, string>>({});
+  1421→  1421→  const [showExercises, setShowExercises] = useState(false);
+  1422→  1422→  const [lessonComplete, setLessonComplete] = useState(false);
+  1423→  1423→  const [showConfetti, setShowConfetti] = useState(false);
+  1424→  1424→
+  1425→  1425→  const saveProgress = (newProgress: UserProgress) => {
+  1426→  1426→    setUserProgress(newProgress);
+  1427→  1427→    localStorage.setItem('quebrando-ciclo-progress', JSON.stringify(newProgress));
+  1428→  1428→  };
+  1429→  1429→
+  1430→  1430→  // Get current phase
+  1431→  1431→  const phase = selectedPhase > 0 ? journeyPhases.find(p => p.id === selectedPhase) : null;
+  1432→  1432→  const lesson = phase?.lessons[currentLesson];
+  1433→  1433→  const completedLessons = phase ? (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [] : [];
+  1434→  1434→  const isLessonComplete = lesson ? completedLessons.includes(lesson.id) : false;
+  1435→  1435→
+  1436→  1436→  // Calculate saved answers using useMemo (avoids setState in effect)
+  1437→  1437→  const initialAnswers = useMemo(() => {
+  1438→  1438→    if (!phase || !lesson) return {};
+  1439→  1439→    const saved: Record<number, string> = {};
+  1440→  1440→    lesson.exercises.forEach((_, i) => {
+  1441→  1441→      const key = `phase${phase.id}_lesson${lesson.id}_ex${i}`;
+  1442→  1442→      if (userProgress.exerciseAnswers[key]) {
+  1443→  1443→        saved[i] = userProgress.exerciseAnswers[key];
+  1444→  1444→      }
+  1445→  1445→    });
+  1446→  1446→    return saved;
+  1447→  1447→  }, [phase, lesson, userProgress.exerciseAnswers]);
+  1448→  1448→
+  1449→  1449→  // Update answers when initialAnswers changes
+  1450→  1450→  useEffect(() => {
+  1451→  1451→    setAnswers(initialAnswers);
+  1452→  1452→  }, [initialAnswers]);
+  1453→  1453→
+  1454→  1454→  // Lesson Detail View
+  1455→  1455→  if (selectedPhase > 0 && phase) {
+  1456→  1456→    const completeLesson = () => {
+  1457→  1457→      if (!lesson) return;
+  1458→  1458→      // Save progress
+  1459→  1459→      const newProgress = { ...userProgress };
+  1460→  1460→      const phaseKey = `phase${phase.id}Lessons` as keyof UserProgress;
+  1461→  1461→      if (!newProgress[phaseKey].includes(lesson.id)) {
+  1462→  1462→        (newProgress[phaseKey] as number[]).push(lesson.id);
+  1463→  1463→      }
+  1464→  1464→      // Save answers
+  1465→  1465→      Object.entries(answers).forEach(([index, answer]) => {
+  1466→  1466→        const key = `phase${phase.id}_lesson${lesson.id}_ex${index}`;
+  1467→  1467→        newProgress.exerciseAnswers[key] = answer;
+  1468→  1468→      });
+  1469→  1469→      saveProgress(newProgress);
+  1470→  1470→      
+  1471→  1471→      setShowConfetti(true);
+  1472→  1472→      setLessonComplete(true);
+  1473→  1473→      setTimeout(() => setShowConfetti(false), 3000);
+  1474→  1474→    };
+  1475→  1475→
+  1476→  1476→    const goToNextLesson = () => {
+  1477→  1477→      if (!phase) return;
+  1478→  1478→      if (currentLesson < phase.lessons.length - 1) {
+  1479→  1479→        setCurrentLesson(currentLesson + 1);
+  1480→  1480→        setShowExercises(false);
+  1481→  1481→        setLessonComplete(false);
+  1482→  1482→        setAnswers({});
+  1483→  1483→      } else {
+  1484→  1484→        setSelectedPhase(0);
+  1485→  1485→        setCurrentLesson(0);
+  1486→  1486→      }
+  1487→  1487→    };
+  1488→  1488→
+  1489→  1489→    return (
+  1490→  1490→      <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1491→  1491→        <Confetti show={showConfetti} />
+  1492→  1492→        
+  1493→  1493→        {/* Header */}
+  1494→  1494→        <div className={`bg-gradient-to-r ${phase.color} text-white p-5 rounded-b-3xl`}>
+  1495→  1495→          <button onClick={() => setSelectedPhase(0)} className="flex items-center text-white/80 mb-3">
+  1496→  1496→            <ChevronLeft className="h-5 w-5" /> Voltar
+  1497→  1497→          </button>
+  1498→  1498→          <div className="flex items-center gap-3">
+  1499→  1499→            <span className="text-3xl">{phase.emoji}</span>
+  1500→  1500→            <div>
+  1501→  1501→              <h1 className="text-xl font-bold">{phase.title}</h1>
+  1502→  1502→              <p className="text-white/80 text-sm">Lição {currentLesson + 1} de {phase.lessons.length}</p>
+  1503→  1503→            </div>
+  1504→  1504→          </div>
+  1505→  1505→          <div className="mt-4">
+  1506→  1506→            <Progress value={(completedLessons.length / phase.lessons.length) * 100} className="h-2 bg-white/20" />
+  1507→  1507→          </div>
+  1508→  1508→        </div>
+  1509→  1509→
+  1510→  1510→        {/* Lesson Progress Pills */}
+  1511→  1511→        <div className="p-3 overflow-x-auto">
+  1512→  1512→          <div className="flex gap-2">
+  1513→  1513→            {phase.lessons.map((l, i) => (
+  1514→  1514→              <button
+  1515→  1515→                key={l.id}
+  1516→  1516→                onClick={() => { setCurrentLesson(i); setShowExercises(false); setLessonComplete(false); }}
+  1517→  1517→                className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+  1518→  1518→                  currentLesson === i 
+  1519→  1519→                    ? `bg-gradient-to-r ${phase.color} text-white shadow-md` 
+  1520→  1520→                    : completedLessons.includes(l.id)
+  1521→  1521→                      ? 'bg-green-100 text-green-700'
+  1522→  1522→                      : 'bg-white text-gray-600 shadow-sm'
+  1523→  1523→                }`}
+  1524→  1524→              >
+  1525→  1525→                {completedLessons.includes(l.id) && currentLesson !== i ? '✓' : ''} {l.title}
+  1526→  1526→              </button>
+  1527→  1527→            ))}
+  1528→  1528→          </div>
+  1529→  1529→        </div>
+  1530→  1530→
+  1531→  1531→        {lesson && (
+  1532→  1532→          <div className="p-4 space-y-4">
+  1533→  1533→            {/* Content */}
+  1534→  1534→            <Card className="shadow-md">
+  1535→  1535→              <CardContent className="p-5">
+  1536→  1536→                <h2 className="text-xl font-bold text-gray-800 mb-4">{lesson.title}</h2>
+  1537→  1537→                <div className="prose prose-sm max-w-none">
+  1538→  1538→                  {lesson.content.split('\n').map((line, i) => (
+  1539→  1539→                    <p key={i} className="mb-2 text-gray-700 leading-relaxed">{line}</p>
+  1540→  1540→                  ))}
+  1541→  1541→                </div>
+  1542→  1542→              </CardContent>
+  1543→  1543→            </Card>
+  1544→  1544→
+  1545→  1545→            {/* Show Exercises Button */}
+  1546→  1546→            {!showExercises && lesson.exercises.length > 0 && (
+  1547→  1547→              <Button 
+  1548→  1548→                onClick={() => setShowExercises(true)} 
+  1549→  1549→                className={`w-full h-14 bg-gradient-to-r ${phase.color} rounded-xl text-lg font-semibold shadow-lg`}
+  1550→  1550→              >
+  1551→  1551→                <Edit3 className="mr-2 h-5 w-5" /> Fazer Exercícios (+{lesson.xp} XP)
+  1552→  1552→              </Button>
+  1553→  1553→            )}
+  1554→  1554→
+  1555→  1555→            {/* Exercises */}
+  1556→  1556→            {showExercises && !lessonComplete && (
+  1557→  1557→              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+  1558→  1558→                <Card className="bg-amber-50 border-amber-200">
+  1559→  1559→                  <CardContent className="p-4">
+  1560→  1560→                    <h3 className="font-semibold text-amber-800 mb-2">📝 Exercícios de Reflexão</h3>
+  1561→  1561→                    <p className="text-sm text-amber-700">Responda às perguntas abaixo para completar esta lição.</p>
+  1562→  1562→                  </CardContent>
+  1563→  1563→                </Card>
+  1564→  1564→
+  1565→  1565→                {lesson.exercises.map((exercise, index) => (
+  1566→  1566→                  <Card key={index} className="shadow-md">
+  1567→  1567→                    <CardContent className="p-4">
+  1568→  1568→                      <Label className="text-gray-800 font-medium">{index + 1}. {exercise.question}</Label>
+  1569→  1569→                      <Textarea
+  1570→  1570→                        value={answers[index] || ''}
+  1571→  1571→                        onChange={(e) => setAnswers({ ...answers, [index]: e.target.value })}
+  1572→  1572→                        placeholder={exercise.placeholder}
+  1573→  1573→                        className="mt-2 min-h-[100px]"
+  1574→  1574→                      />
+  1575→  1575→                    </CardContent>
+  1576→  1576→                  </Card>
+  1577→  1577→                ))}
+  1578→  1578→
+  1579→  1579→                <Button 
+  1580→  1580→                  onClick={completeLesson}
+  1581→  1581→                  disabled={lesson.exercises.some((_, i) => !answers[i]?.trim())}
+  1582→  1582→                  className={`w-full h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl text-lg font-semibold shadow-lg`}
+  1583→  1583→                >
+  1584→  1584→                  <Check className="mr-2 h-5 w-5" /> Completar Lição (+{lesson.xp} XP)
+  1585→  1585→                </Button>
+  1586→  1586→              </motion.div>
+  1587→  1587→            )}
+  1588→  1588→
+  1589→  1589→            {/* Lesson Complete */}
+  1590→  1590→            {lessonComplete && (
+  1591→  1591→              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+  1592→  1592→                <Card className="bg-green-50 border-green-200">
+  1593→  1593→                  <CardContent className="p-6 text-center">
+  1594→  1594→                    <div className="text-5xl mb-4">🎉</div>
+  1595→  1595→                    <h3 className="text-xl font-bold text-green-800 mb-2">Lição Concluída!</h3>
+  1596→  1596→                    <p className="text-green-700 mb-4">Você ganhou +{lesson.xp} XP</p>
+  1597→  1597→                    <div className="flex gap-3">
+  1598→  1598→                      <Button onClick={goToNextLesson} className="flex-1 bg-green-500 hover:bg-green-600">
+  1599→  1599→                        {currentLesson < phase.lessons.length - 1 ? 'Próxima Lição' : 'Voltar à Jornada'}
+  1600→  1600→                      </Button>
+  1601→  1601→                    </div>
+  1602→  1602→                  </CardContent>
+  1603→  1603→                </Card>
+  1604→  1604→              </motion.div>
+  1605→  1605→            )}
+  1606→  1606→
+  1607→  1607→            {/* Skip for lessons without exercises */}
+  1608→  1608→            {!showExercises && lesson.exercises.length === 0 && (
+  1609→  1609→              <Button onClick={goToNextLesson} className={`w-full h-14 bg-gradient-to-r ${phase.color} rounded-xl font-semibold shadow-lg`}>
+  1610→  1610→                Continuar <ChevronRight className="ml-2 h-5 w-5" />
+  1611→  1611→              </Button>
+  1612→  1612→            )}
+  1613→  1613→          </div>
+  1614→  1614→        )}
+  1615→  1615→
+  1616→  1616→        <BottomNav />
+  1617→  1617→      </motion.div>
+  1618→  1618→    );
+  1619→  1619→  }
+  1620→  1620→
+  1621→  1621→  // Phase List View
+  1622→  1622→  return (
+  1623→  1623→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1624→  1624→      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-b-3xl">
+  1625→  1625→        <h1 className="text-2xl font-bold">📍 Sua Jornada</h1>
+  1626→  1626→        <p className="text-green-100 mt-1">Do ponto A ao ponto B</p>
+  1627→  1627→      </div>
+  1628→  1628→
+  1629→  1629→      <div className="p-4 space-y-4">
+  1630→  1630→        {journeyPhases.map((phase) => {
+  1631→  1631→          const completedLessons = (userProgress as Record<string, number[]>)[`phase${phase.id}Lessons`] || [];
+  1632→  1632→          const isComplete = completedLessons.length === phase.lessons.length && phase.lessons.length > 0;
+  1633→  1633→          const isInProgress = completedLessons.length > 0;
+  1634→  1634→
+  1635→  1635→          return (
+  1636→  1636→            <Card 
+  1637→  1637→              key={phase.id}
+  1638→  1638→              className={`shadow-md cursor-pointer active:scale-[0.99] transition-transform ${isComplete ? 'bg-green-50 border-green-200' : ''}`}
+  1639→  1639→              onClick={() => phase.lessons.length > 0 && setSelectedPhase(phase.id)}
+  1640→  1640→            >
+  1641→  1641→              <CardContent className="p-4">
+  1642→  1642→                <div className="flex items-center gap-4">
+  1643→  1643→                  <div className={`w-16 h-16 bg-gradient-to-r ${phase.color} rounded-2xl flex items-center justify-center text-3xl shadow-md ${phase.lessons.length === 0 ? 'opacity-50' : ''}`}>
+  1644→  1644→                    {isComplete ? '✅' : phase.emoji}
+  1645→  1645→                  </div>
+  1646→  1646→                  <div className="flex-1">
+  1647→  1647→                    <div className="flex items-center gap-2 mb-1">
+  1648→  1648→                      <span className="text-xs font-bold text-gray-400">FASE {phase.id}</span>
+  1649→  1649→                      {isInProgress && !isComplete && (
+  1650→  1650→                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Em progresso</span>
+  1651→  1651→                      )}
+  1652→  1652→                      {isComplete && (
+  1653→  1653→                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Completo</span>
+  1654→  1654→                      )}
+  1655→  1655→                    </div>
+  1656→  1656→                    <h3 className="font-bold text-gray-800">{phase.title}</h3>
+  1657→  1657→                    <p className="text-sm text-gray-500">{phase.description}</p>
+  1658→  1658→                    {phase.lessons.length > 0 && (
+  1659→  1659→                      <div className="flex items-center gap-2 mt-2">
+  1660→  1660→                        <Progress value={(completedLessons.length / phase.lessons.length) * 100} className="h-1.5 flex-1" />
+  1661→  1661→                        <span className="text-xs text-gray-400">{completedLessons.length}/{phase.lessons.length}</span>
+  1662→  1662→                      </div>
+  1663→  1663→                    )}
+  1664→  1664→                  </div>
+  1665→  1665→                  <ChevronRight className="h-6 w-6 text-gray-400" />
+  1666→  1666→                </div>
+  1667→  1667→              </CardContent>
+  1668→  1668→            </Card>
+  1669→  1669→          );
+  1670→  1670→        })}
+  1671→  1671→      </div>
+  1672→  1672→
+  1673→  1673→      <BottomNav />
+  1674→  1674→    </motion.div>
+  1675→  1675→  );
+  1676→  1676→}
+  1677→  1677→
+  1678→  1678→// ============================================
+  1679→  1679→// NUTRITION SCREEN - HUB DE NUTRIÇÃO
+  1680→  1680→// ============================================
+  1681→  1681→function NutritionScreen() {
+  1682→  1682→  const { setCurrentView, setSelectedRecipe, setSelectedJuice, addFavorite, removeFavoriteByItem, isFavorite } = useAppStore();
+  1683→  1683→  const [selectedTab, setSelectedTab] = useState<'receitas' | 'sucos'>('receitas');
+  1684→  1684→  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  1685→  1685→  const [searchQuery, setSearchQuery] = useState('');
+  1686→  1686→
+  1687→  1687→  const categoryLabels: Record<string, string> = {
+  1688→  1688→    cafe_salgado: '🍳 Café Salgado',
+  1689→  1689→    cafe_doce: '🥞 Café Doce',
+  1690→  1690→    principal: '🍽️ Principal',
+  1691→  1691→    lanche_salgado: '🥪 Lanche Salgado',
+  1692→  1692→    lanche_doce: '🍰 Lanche Doce',
+  1693→  1693→  };
+  1694→  1694→
+  1695→  1695→  const categories = [...new Set(recipesData.map(r => r.category))];
+  1696→  1696→  
+  1697→  1697→  const filteredRecipes = recipesData.filter(r => {
+  1698→  1698→    const matchesCategory = !selectedCategory || r.category === selectedCategory;
+  1699→  1699→    const matchesSearch = !searchQuery || 
+  1700→  1700→      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1701→  1701→      r.description.toLowerCase().includes(searchQuery.toLowerCase());
+  1702→  1702→    return matchesCategory && matchesSearch;
+  1703→  1703→  });
+  1704→  1704→
+  1705→  1705→  const filteredJuices = juicesData.filter(j => {
+  1706→  1706→    const matchesSearch = !searchQuery || 
+  1707→  1707→      j.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1708→  1708→      j.description.toLowerCase().includes(searchQuery.toLowerCase());
+  1709→  1709→    return matchesSearch;
+  1710→  1710→  });
+  1711→  1711→
+  1712→  1712→  const toggleRecipeFavorite = (recipeId: string, e: React.MouseEvent) => {
+  1713→  1713→    e.stopPropagation();
+  1714→  1714→    if (isFavorite(recipeId, undefined)) {
+  1715→  1715→      removeFavoriteByItem(recipeId, undefined);
+  1716→  1716→    } else {
+  1717→  1717→      addFavorite({ recipeId });
+  1718→  1718→    }
+  1719→  1719→  };
+  1720→  1720→
+  1721→  1721→  const toggleJuiceFavorite = (juiceId: string, e: React.MouseEvent) => {
+  1722→  1722→    e.stopPropagation();
+  1723→  1723→    if (isFavorite(undefined, juiceId)) {
+  1724→  1724→      removeFavoriteByItem(undefined, juiceId);
+  1725→  1725→    } else {
+  1726→  1726→      addFavorite({ juiceId });
+  1727→  1727→    }
+  1728→  1728→  };
+  1729→  1729→
+  1730→  1730→  const getDifficultyColor = (difficulty: string) => {
+  1731→  1731→    switch (difficulty) {
+  1732→  1732→      case 'facil': return 'bg-green-100 text-green-700';
+  1733→  1733→      case 'medio': return 'bg-yellow-100 text-yellow-700';
+  1734→  1734→      case 'dificil': return 'bg-red-100 text-red-700';
+  1735→  1735→      default: return 'bg-gray-100 text-gray-700';
+  1736→  1736→    }
+  1737→  1737→  };
+  1738→  1738→
+  1739→  1739→  return (
+  1740→  1740→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1741→  1741→      {/* Header */}
+  1742→  1742→      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-5 rounded-b-3xl">
+  1743→  1743→        <h1 className="text-2xl font-bold flex items-center gap-2">
+  1744→  1744→          <Utensils className="h-6 w-6" />
+  1745→  1745→          Nutrição
+  1746→  1746→        </h1>
+  1747→  1747→        <p className="text-green-100 mt-1 text-sm">Receitas e Sucos Detox</p>
+  1748→  1748→        
+  1749→  1749→        {/* Search */}
+  1750→  1750→        <div className="relative mt-4">
+  1751→  1751→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-green-300" />
+  1752→  1752→          <Input
+  1753→  1753→            value={searchQuery}
+  1754→  1754→            onChange={(e) => setSearchQuery(e.target.value)}
+  1755→  1755→            placeholder="Buscar receitas ou sucos..."
+  1756→  1756→            className="pl-10 h-11 bg-white/20 border-0 text-white placeholder:text-green-200 rounded-xl"
+  1757→  1757→          />
+  1758→  1758→          {searchQuery && (
+  1759→  1759→            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+  1760→  1760→              <X className="h-5 w-5 text-green-200" />
+  1761→  1761→            </button>
+  1762→  1762→          )}
+  1763→  1763→        </div>
+  1764→  1764→      </div>
+  1765→  1765→
+  1766→  1766→      {/* Tabs */}
+  1767→  1767→      <div className="p-3 flex gap-2">
+  1768→  1768→        <button 
+  1769→  1769→          onClick={() => { setSelectedTab('receitas'); setSelectedCategory(null); }}
+  1770→  1770→          className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${selectedTab === 'receitas' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}
+  1771→  1771→        >
+  1772→  1772→          <ChefHat className="h-5 w-5" />
+  1773→  1773→          Receitas ({filteredRecipes.length})
+  1774→  1774→        </button>
+  1775→  1775→        <button 
+  1776→  1776→          onClick={() => setSelectedTab('sucos')}
+  1777→  1777→          className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${selectedTab === 'sucos' ? 'bg-lime-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}
+  1778→  1778→        >
+  1779→  1779→          <GlassWater className="h-5 w-5" />
+  1780→  1780→          Sucos ({filteredJuices.length})
+  1781→  1781→        </button>
+  1782→  1782→      </div>
+  1783→  1783→
+  1784→  1784→      {/* Content */}
+  1785→  1785→      {selectedTab === 'receitas' ? (
+  1786→  1786→        <>
+  1787→  1787→          {/* Categories */}
+  1788→  1788→          <div className="px-3 overflow-x-auto">
+  1789→  1789→            <div className="flex gap-2 pb-2">
+  1790→  1790→              <button onClick={() => setSelectedCategory(null)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${!selectedCategory ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>Todas</button>
+  1791→  1791→              {categories.map((cat) => (
+  1792→  1792→                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{categoryLabels[cat] || cat}</button>
+  1793→  1793→              ))}
+  1794→  1794→            </div>
+  1795→  1795→          </div>
+  1796→  1796→
+  1797→  1797→          {/* Recipes Grid */}
+  1798→  1798→          <div className="p-3 grid grid-cols-2 gap-3">
+  1799→  1799→            <AnimatePresence mode="popLayout">
+  1800→  1800→              {filteredRecipes.map((recipe, index) => {
+  1801→  1801→                const isFav = isFavorite(recipe.id, undefined);
+  1802→  1802→                return (
+  1803→  1803→                  <motion.div
+  1804→  1804→                    key={recipe.id}
+  1805→  1805→                    layout
+  1806→  1806→                    initial={{ opacity: 0, scale: 0.9 }}
+  1807→  1807→                    animate={{ opacity: 1, scale: 1 }}
+  1808→  1808→                    exit={{ opacity: 0, scale: 0.9 }}
+  1809→  1809→                    transition={{ delay: index * 0.02 }}
+  1810→  1810→                  >
+  1811→  1811→                    <Card 
+  1812→  1812→                      className="shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform bg-white border border-gray-100 hover:shadow-md" 
+  1813→  1813→                      onClick={() => { setSelectedRecipe(recipe.id); setCurrentView('recipe-detail'); }}
+  1814→  1814→                    >
+  1815→  1815→                      <div className="h-20 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-3xl relative">
+  1816→  1816→                        <span>{recipe.category.includes('cafe') ? '🥐' : recipe.category.includes('principal') ? '🍽️' : recipe.category.includes('lanche_doce') ? '🍰' : '🥪'}</span>
+  1817→  1817→                        <button 
+  1818→  1818→                          onClick={(e) => toggleRecipeFavorite(recipe.id, e)} 
+  1819→  1819→                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all ${isFav ? 'bg-red-100 text-red-500' : 'bg-white/80 text-gray-400'}`}
+  1820→  1820→                        >
+  1821→  1821→                          <Heart className={`h-3.5 w-3.5 ${isFav ? 'fill-current' : ''}`} />
+  1822→  1822→                        </button>
+  1823→  1823→                      </div>
+  1824→  1824→                      <CardContent className="p-3">
+  1825→  1825→                        <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-2">{recipe.name}</h3>
+  1826→  1826→                        <div className="flex items-center justify-between">
+  1827→  1827→                          <div className="flex items-center gap-2 text-xs text-gray-500">
+  1828→  1828→                            <div className="flex items-center gap-1">
+  1829→  1829→                              <Flame className="h-3 w-3 text-orange-500" />
+  1830→  1830→                              <span>{recipe.calories}</span>
+  1831→  1831→                            </div>
+  1832→  1832→                            <div className="flex items-center gap-1">
+  1833→  1833→                              <Clock className="h-3 w-3 text-blue-500" />
+  1834→  1834→                              <span>{recipe.prepTime}m</span>
+  1835→  1835→                            </div>
+  1836→  1836→                          </div>
+  1837→  1837→                          <span className={`text-xs px-2 py-0.5 rounded-full ${getDifficultyColor(recipe.difficulty || 'facil')}`}>
+  1838→  1838→                            {recipe.difficulty === 'facil' ? 'Fácil' : recipe.difficulty === 'medio' ? 'Médio' : 'Difícil'}
+  1839→  1839→                          </span>
+  1840→  1840→                        </div>
+  1841→  1841→                      </CardContent>
+  1842→  1842→                    </Card>
+  1843→  1843→                  </motion.div>
+  1844→  1844→                );
+  1845→  1845→              })}
+  1846→  1846→            </AnimatePresence>
+  1847→  1847→          </div>
+  1848→  1848→          
+  1849→  1849→          {filteredRecipes.length === 0 && (
+  1850→  1850→            <div className="text-center py-12">
+  1851→  1851→              <ChefHat className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+  1852→  1852→              <p className="text-gray-500">Nenhuma receita encontrada</p>
+  1853→  1853→            </div>
+  1854→  1854→          )}
+  1855→  1855→        </>
+  1856→  1856→      ) : (
+  1857→  1857→        /* Juices List */
+  1858→  1858→        <div className="p-3 space-y-3">
+  1859→  1859→          <AnimatePresence mode="popLayout">
+  1860→  1860→            {filteredJuices.map((juice, index) => {
+  1861→  1861→              const isFav = isFavorite(undefined, juice.id);
+  1862→  1862→              return (
+  1863→  1863→                <motion.div
+  1864→  1864→                  key={juice.id}
+  1865→  1865→                  layout
+  1866→  1866→                  initial={{ opacity: 0, x: -20 }}
+  1867→  1867→                  animate={{ opacity: 1, x: 0 }}
+  1868→  1868→                  exit={{ opacity: 0, x: 20 }}
+  1869→  1869→                  transition={{ delay: index * 0.03 }}
+  1870→  1870→                >
+  1871→  1871→                  <Card 
+  1872→  1872→                    className="shadow-sm cursor-pointer active:scale-[0.99] transition-transform bg-white border border-gray-100 hover:shadow-md" 
+  1873→  1873→                    onClick={() => { setSelectedJuice(juice.id); setCurrentView('juice-detail'); }}
+  1874→  1874→                  >
+  1875→  1875→                    <CardContent className="p-4">
+  1876→  1876→                      <div className="flex items-center gap-4">
+  1877→  1877→                        <div className="w-14 h-14 bg-gradient-to-br from-lime-50 to-green-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🥤</div>
+  1878→  1878→                        <div className="flex-1 min-w-0">
+  1879→  1879→                          <h3 className="font-semibold text-gray-800">{juice.name}</h3>
+  1880→  1880→                          <p className="text-sm text-gray-500 line-clamp-1">{juice.description}</p>
+  1881→  1881→                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+  1882→  1882→                            <Clock className="h-3 w-3" />
+  1883→  1883→                            <span>{juice.prepTime} min</span>
+  1884→  1884→                            <span>•</span>
+  1885→  1885→                            <span>{juice.benefits.length} benefícios</span>
+  1886→  1886→                          </div>
+  1887→  1887→                        </div>
+  1888→  1888→                        <button 
+  1889→  1889→                          onClick={(e) => toggleJuiceFavorite(juice.id, e)} 
+  1890→  1890→                          className={`p-2 flex-shrink-0 rounded-full transition-all ${isFav ? 'text-red-500 bg-red-50' : 'text-gray-300 hover:text-red-400'}`}
+  1891→  1891→                        >
+  1892→  1892→                          <Heart className={`h-5 w-5 ${isFav ? 'fill-current' : ''}`} />
+  1893→  1893→                        </button>
+  1894→  1894→                      </div>
+  1895→  1895→                    </CardContent>
+  1896→  1896→                  </Card>
+  1897→  1897→                </motion.div>
+  1898→  1898→              );
+  1899→  1899→            })}
+  1900→  1900→          </AnimatePresence>
+  1901→  1901→          
+  1902→  1902→          {filteredJuices.length === 0 && (
+  1903→  1903→            <div className="text-center py-12">
+  1904→  1904→              <GlassWater className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+  1905→  1905→              <p className="text-gray-500">Nenhum suco encontrado</p>
+  1906→  1906→            </div>
+  1907→  1907→          )}
+  1908→  1908→        </div>
+  1909→  1909→      )}
+  1910→  1910→      <BottomNav />
+  1911→  1911→    </motion.div>
+  1912→  1912→  );
+  1913→  1913→}
+  1914→  1914→
+  1915→  1915→// ============================================
+  1916→  1916→// RECIPES SCREEN - DADOS LOCAIS
+  1917→  1917→// ============================================
+  1918→  1918→function RecipesScreen() {
+  1919→  1919→  const { setCurrentView, setSelectedRecipe } = useAppStore();
+  1920→  1920→  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  1921→  1921→  const [favorites, setFavorites] = useState<string[]>([]);
+  1922→  1922→
+  1923→  1923→  const categoryLabels: Record<string, string> = {
+  1924→  1924→    cafe_salgado: 'Café Salgado',
+  1925→  1925→    cafe_doce: 'Café Doce',
+  1926→  1926→    principal: 'Principal',
+  1927→  1927→    lanche_salgado: 'Lanche Salgado',
+  1928→  1928→    lanche_doce: 'Lanche Doce',
+  1929→  1929→  };
+  1930→  1930→
+  1931→  1931→  // Usar dados locais
+  1932→  1932→  const recipes = recipesData.map(r => ({ ...r, isFavorite: favorites.includes(r.id) }));
+  1933→  1933→  const categories = [...new Set(recipes.map(r => r.category))];
+  1934→  1934→  const filteredRecipes = selectedCategory ? recipes.filter(r => r.category === selectedCategory) : recipes;
+  1935→  1935→
+  1936→  1936→  const toggleFavorite = (recipeId: string) => {
+  1937→  1937→    if (favorites.includes(recipeId)) {
+  1938→  1938→      setFavorites(favorites.filter(id => id !== recipeId));
+  1939→  1939→    } else {
+  1940→  1940→      setFavorites([...favorites, recipeId]);
+  1941→  1941→    }
+  1942→  1942→  };
+  1943→  1943→
+  1944→  1944→  return (
+  1945→  1945→    <motion.div className="min-h-screen bg-gray-50 pb-24" {...fadeIn}>
+  1946→  1946→      <div className="bg-gradient-to-r from-orange-400 to-orange-500 text-white p-5 rounded-b-3xl">
+  1947→  1947→        <h1 className="text-2xl font-bold">Receitas Saudáveis 🍳</h1>
+  1948→  1948→        <p className="text-orange-100 mt-1 text-sm">30 receitas entre 250-400 kcal</p>
+  1949→  1949→      </div>
+  1950→  1950→      
+  1951→  1951→      {categories.length > 0 && (
+  1952→  1952→        <div className="p-3 overflow-x-auto">
+  1953→  1953→          <div className="flex gap-2 pb-1">
+  1954→  1954→            <button onClick={() => setSelectedCategory(null)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${!selectedCategory ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>Todas</button>
+  1955→  1955→            {categories.map((cat) => (
+  1956→  1956→              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'}`}>{categoryLabels[cat] || cat}</button>
+  1957→  1957→            ))}
+  1958→  1958→          </div>
+  1959→  1959→        </div>
+  1960→  1960→      )}
+  1961→  1961→      
+  1962→  1962→      <div className="p-3 grid grid-cols-2 gap-3">
+  1963→  1963→        {filteredRecipes.map((recipe) => (
+  1964→  1964→          <Card key={recipe.id} className="shadow-sm overflow-hidden cursor-pointer active:scale-[0.98] transition-transform bg-white border border-gray-100" onClick={() => { setSelectedRecipe(recipe.id); setCurrentView('recipe-detail'); }}>
+  1965→  1965→            <div className="h-24 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center text-4xl">
+  1966→  1966→              {recipe.category.includes('cafe') ? '🥐' : recipe.category.includes('principal') ? '🍽️' : recipe.category.includes('lanche_doce') ? '🍰' : '🥪'}
+  1967→  1967→            </div>
+  1968→  1968→            <CardContent className="p-3">
+  1969→  1969→              <h3 className="font-medium text-sm line-clamp-2 leading-tight">{recipe.name}</h3>
+  1970→  1970→              <div className="flex items-center justify-between mt-2">
+  1971→  1971→                <span className="text-xs text-gray-500">{recipe.calories} kcal</span>
+  1972→  1972→                <button onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe.id); }} className="p-1"><Heart className={`h-4 w-4 ${recipe.isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} /></button>
+  1973→  1973→              </div>
+  1974→  1974→            </CardContent>
+  1975→  1975→          </Card>
+  1976→  1976→        ))}
+  1977→  1977→      </div>
+  1978→  1978→      <BottomNav />
+  1979→  1979→    </motion.div>
+  1980→  1980→  );
+  1981→  1981→}
+  1982→  1982→
+  1983→  1983→// ============================================
+  1984→  1984→// JUICES SCREEN - DADOS LOCAIS
+  1985→  1985→// ============================================
+  1986→  1986→function JuicesScreen() {
+  1987→  1987→  const { setCurrentView, setSelectedJuice } = useAppStore();
+  1988→  1988→  const [favorites, setFavorites] = useState<string[]>([]);
+  1989→  1989→
+  1990→  1990→  // Usar dados locais
+  1991→  1991→  const juices = juicesData.map(j => ({ ...j, isFavorite: favorites.includes(j.id) }));
+  1992→  1992→
+  1993→  1993→  const toggleFavorite = (juiceId: string) => {
+  1994→  1994→    if (favorites.includes(juiceId)) {
+  1995→  1995→      setFavorites(favorites.filter(id => id !== juiceId));
+  1996→  1996→    } else {
+  1997→  1997→      setFavorites([...favorites, juiceId]);
+  1998→  1998→    }
+  1999→  1999→  };
+  2000→  2000→
+
+[showing lines 1-2000 of 2002; use offset=2001 with limit to continue reading]

@@ -1,147 +1,113 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export interface User {
-  id: string;
-  email: string;
+export type View = 'onboarding' | 'dashboard' | 'phases' | 'phase-detail' | 'nutrition' | 'recipe-detail' | 'juice-detail' | 'mealplan' | 'workout' | 'achievements' | 'profile';
+
+export interface UserData {
   name: string;
-  createdAt: string;
-  profile?: {
-    weight: number;
-    height: number;
-    goalWeight: number;
-    objective: string;
-    activityLevel: string;
-  };
-  progress?: {
-    xp: number;
-    level: number;
-    currentPhase: number;
-    streak: number;
-    totalDays: number;
-    phase1Progress: number;
-    phase2Progress: number;
-    phase3Progress: number;
-    phase4Progress: number;
-    phase5Progress: number;
-  };
+  email: string;
+  weight: number;
+  goalWeight: number;
+  height: number;
 }
 
-export interface Favorite {
-  id: string;
-  recipeId?: string;
-  juiceId?: string;
-  createdAt: string;
+interface CompletedLesson {
+  phaseId: number;
+  lessonId: number;
 }
 
 interface AppState {
-  user: User | null;
-  userId: string | null;
-  isLoggedIn: boolean;
-  currentView: 'welcome' | 'onboarding' | 'login' | 'register' | 'dashboard' | 'phases' | 'phase-content' | 'recipes' | 'recipe-detail' | 'juices' | 'juice-detail' | 'mealplan' | 'water' | 'profile' | 'achievements' | 'workout' | 'admin';
+  user: UserData | null;
+  currentView: View;
   selectedPhase: number;
-  selectedRecipe: string | null;
-  selectedJuice: string | null;
-  selectedMealDay: number;
-  favorites: Favorite[];
-  
-  // Actions
-  setUser: (user: User | null) => void;
-  setUserId: (userId: string | null) => void;
-  login: (user: User, userId: string) => void;
+  selectedRecipeId: string | null;
+  selectedJuiceId: string | null;
+  completedLessons: CompletedLesson[];
+  favorites: string[];
+  waterGlasses: number;
+  waterGoal: number;
+
+  setView: (view: View) => void;
+  selectPhase: (phaseId: number) => void;
+  selectRecipe: (id: string | null) => void;
+  selectJuice: (id: string | null) => void;
+  completeOnboarding: (data: UserData) => void;
+  completeLesson: (phaseId: number, lessonId: number) => void;
+  isLessonCompleted: (phaseId: number, lessonId: number) => boolean;
+  toggleFavorite: (id: string) => void;
+  isFavorite: (id: string) => boolean;
+  setWaterGlasses: (glasses: number) => void;
+  getCompletedCount: () => number;
+  getPhaseCompletedCount: (phaseId: number) => number;
+  updateProfile: (data: Partial<UserData>) => void;
   logout: () => void;
-  setCurrentView: (view: AppState['currentView']) => void;
-  setSelectedPhase: (phase: number) => void;
-  setSelectedRecipe: (recipeId: string | null) => void;
-  setSelectedJuice: (juiceId: string | null) => void;
-  setSelectedMealDay: (day: number) => void;
-  updateUserProgress: (progress: Partial<NonNullable<User['progress']>>) => void;
-  
-  // Favorites
-  addFavorite: (favorite: Omit<Favorite, 'id' | 'createdAt'>) => void;
-  removeFavorite: (favoriteId: string) => void;
-  removeFavoriteByItem: (recipeId?: string, juiceId?: string) => void;
-  isFavorite: (recipeId?: string, juiceId?: string) => boolean;
-  getFavoriteId: (recipeId?: string, juiceId?: string) => string | null;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       user: null,
-      userId: null,
-      isLoggedIn: false,
-      currentView: 'welcome',
+      currentView: 'onboarding',
       selectedPhase: 1,
-      selectedRecipe: null,
-      selectedJuice: null,
-      selectedMealDay: 1,
+      selectedRecipeId: null,
+      selectedJuiceId: null,
+      completedLessons: [],
       favorites: [],
+      waterGlasses: 0,
+      waterGoal: 10,
 
-      setUser: (user) => set({ user }),
-      setUserId: (userId) => set({ userId }),
-      login: (user, userId) => set({ user, userId, isLoggedIn: true, currentView: 'dashboard' }),
-      logout: () => set({ user: null, userId: null, isLoggedIn: false, currentView: 'welcome', favorites: [] }),
-      setCurrentView: (view) => set({ currentView: view }),
-      setSelectedPhase: (phase) => set({ selectedPhase: phase }),
-      setSelectedRecipe: (recipeId) => set({ selectedRecipe: recipeId }),
-      setSelectedJuice: (juiceId) => set({ selectedJuice: juiceId }),
-      setSelectedMealDay: (day) => set({ selectedMealDay: day }),
-      updateUserProgress: (progress) =>
-        set((state) => ({
-          user: state.user
-            ? { ...state.user, progress: { ...state.user.progress!, ...progress } }
-            : null,
-        })),
+      setView: (view) => set({ currentView: view }),
+      selectPhase: (phaseId) => set({ selectedPhase: phaseId, currentView: 'phase-detail' }),
+      selectRecipe: (id) => set({ selectedRecipeId: id, currentView: 'recipe-detail' }),
+      selectJuice: (id) => set({ selectedJuiceId: id, currentView: 'juice-detail' }),
 
-      // Favorites actions
-      addFavorite: (favorite) =>
-        set((state) => ({
-          favorites: [
-            ...state.favorites,
-            {
-              ...favorite,
-              id: `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
-
-      removeFavorite: (favoriteId) =>
-        set((state) => ({
-          favorites: state.favorites.filter((f) => f.id !== favoriteId),
-        })),
-
-      removeFavoriteByItem: (recipeId, juiceId) =>
-        set((state) => ({
-          favorites: state.favorites.filter(
-            (f) => !(f.recipeId === recipeId && f.juiceId === juiceId)
-          ),
-        })),
-
-      isFavorite: (recipeId, juiceId) => {
-        const state = get();
-        return state.favorites.some(
-          (f) => f.recipeId === recipeId && f.juiceId === juiceId
-        );
+      completeOnboarding: (data) => {
+        const waterGoal = Math.ceil((data.weight * 35) / 250);
+        set({ user: data, currentView: 'dashboard', waterGoal });
       },
 
-      getFavoriteId: (recipeId, juiceId) => {
+      completeLesson: (phaseId, lessonId) => {
         const state = get();
-        const favorite = state.favorites.find(
-          (f) => f.recipeId === recipeId && f.juiceId === juiceId
-        );
-        return favorite?.id || null;
+        if (state.completedLessons.find(l => l.phaseId === phaseId && l.lessonId === lessonId)) return;
+        set({ completedLessons: [...state.completedLessons, { phaseId, lessonId }] });
+      },
+
+      isLessonCompleted: (phaseId, lessonId) => {
+        return get().completedLessons.some(l => l.phaseId === phaseId && l.lessonId === lessonId);
+      },
+
+      toggleFavorite: (id) => {
+        const state = get();
+        if (state.favorites.includes(id)) {
+          set({ favorites: state.favorites.filter(f => f !== id) });
+        } else {
+          set({ favorites: [...state.favorites, id] });
+        }
+      },
+
+      isFavorite: (id) => get().favorites.includes(id),
+
+      setWaterGlasses: (glasses) => set({ waterGlasses: glasses }),
+
+      getCompletedCount: () => get().completedLessons.length,
+
+      getPhaseCompletedCount: (phaseId) => {
+        return get().completedLessons.filter(l => l.phaseId === phaseId).length;
+      },
+
+      updateProfile: (data) => {
+        const user = get().user;
+        if (!user) return;
+        const updated = { ...user, ...data };
+        const waterGoal = Math.ceil((updated.weight * 35) / 250);
+        set({ user: updated, waterGoal });
+      },
+
+      logout: () => {
+        localStorage.removeItem('quebrando-ciclo-v2');
+        set({ user: null, currentView: 'onboarding', completedLessons: [], favorites: [], waterGlasses: 0 });
       },
     }),
-    {
-      name: 'quebrando-ciclo-storage',
-      partialize: (state) => ({
-        user: state.user,
-        userId: state.userId,
-        isLoggedIn: state.isLoggedIn,
-        favorites: state.favorites,
-      }),
-    }
+    { name: 'quebrando-ciclo-v2' }
   )
 );
